@@ -32,17 +32,15 @@ void Pool::assign(const Pool& pool, int begin, int end = -1) {
     metrics.assign(pool.metrics.begin() + begin, pool.metrics.begin() + end);
 }
 
-std::pair<Pool, Pool> Pool::train_test_split(double train_share) {
-    int waterline = int(factors.size() * train_share);
+std::pair<Pool, Pool> train_test_split(const Pool& pool, double train_share) {
+    int waterline = int(pool.factors.size() * train_share);
     Pool train;
     Pool test;
 
-    train.is_train = 1;
-    train.assign(*this, waterline);
+    train.assign(pool, waterline);
 
-    test.is_train = 0;
-    test.assign(*this, waterline, size());
-    return std::pair<Pool, Pool>(train, test);
+    test.assign(pool, waterline, size());
+    return {train, test};
 }
 
 std::pair<int, int> get_position(const std::string& line, int search_start_position = 0) {
