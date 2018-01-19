@@ -47,11 +47,10 @@ std::pair<Pool, Pool> Pool::train_test_split(double train_share) {
 
 std::pair<int, int> get_position(const std::string& line, int search_start_position = 0) {
     int pos_position = line.find("rnd_pos", search_start_position) + strlen("rnd_pos") + 3;
-    if (line[pos_position + 1] == '0') {
-    return {100, pos_position + 4};
-    } else {
-    return {line[pos_position] - '0', pos_position + 2};
-    }
+    if (line[pos_position + 1] == '0')
+        return {100, pos_position + 4};
+    else
+        return {line[pos_position] - '0', pos_position + 2};
 }
 
 std::pair<double, int> get_probability(const std::string& line, int search_start_position = 0) {
@@ -61,18 +60,18 @@ std::pair<double, int> get_probability(const std::string& line, int search_start
 }
 
 std::pair<std::vector<double>, int> get_vector(const std::string& line, std::string attribute,
-                           int search_start_position = 0) {
+                                               int search_start_position = 0) {
     std::vector<double> result;
     int start_position = line.find(attribute) + attribute.size() + 4;
     if (line.find("null", start_position) != std::string::npos)
-    return {{}, start_position + 4};
+        return {{}, start_position + 4};
 
     int end_position = line.find("]", start_position);
 
     while (start_position < end_position) {
-    int comma_position = line.find(",", start_position);
-    result.push_back(atof(line.substr(start_position, comma_position).c_str()));
-    start_position = comma_position + 2;
+        int comma_position = line.find(",", start_position);
+        result.push_back(atof(line.substr(start_position, comma_position).c_str()));
+        start_position = comma_position + 2;
     }
 
     return {result, end_position + 3};
@@ -88,22 +87,22 @@ Pool get_pool(std::string file_name, int max_line, int start_size) {
     file = fopen(file_name.c_str(), "r");
 
     while (fgets(json_string, max_line, file)) {
-    auto factors_search_reslut = get_vector(std::string(json_string), "factors");
-    if (factors_search_reslut.first.size() > FACTORS_LEN)
-        factors_search_reslut.first.resize(FACTORS_LEN);
-    result.factors.push_back(factors_search_reslut.first);
+        auto factors_search_reslut = get_vector(std::string(json_string), "factors");
+        if (factors_search_reslut.first.size() > FACTORS_LEN)
+            factors_search_reslut.first.resize(FACTORS_LEN);
+        result.factors.push_back(factors_search_reslut.first);
 
-    auto metrics_search_result = get_vector(std::string(json_string), metric_key, factors_search_reslut.second);
-    if (metrics_search_result.first.size() == 0)
-        result.metrics.push_back(0);
-    else
-        result.metrics.push_back(metrics_search_result.first[2] - metrics_search_result.first[1]);
+        auto metrics_search_result = get_vector(std::string(json_string), metric_key, factors_search_reslut.second);
+        if (metrics_search_result.first.size() == 0)
+            result.metrics.push_back(0);
+        else
+            result.metrics.push_back(metrics_search_result.first[2] - metrics_search_result.first[1]);
 
-    auto position_search_result = get_position(std::string(json_string), metrics_search_result.second);
-    result.positions.push_back(position_search_result.first);
+        auto position_search_result = get_position(std::string(json_string), metrics_search_result.second);
+        result.positions.push_back(position_search_result.first);
 
-    auto proba_search_result = get_probability(std::string(json_string), position_search_result.second);
-    result.probas.push_back(proba_search_result.first);
+        auto proba_search_result = get_probability(std::string(json_string), position_search_result.second);
+        result.probas.push_back(proba_search_result.first);
     }
 
     fclose(file);
