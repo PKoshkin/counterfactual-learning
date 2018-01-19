@@ -4,20 +4,6 @@
 #include <string>
 #include <memory>
 
-typedef struct Object {
-    std::vector<double> factors;
-    int position;
-    double metric;
-    double proba;
-    Object() = default;
-
-    Object(const Object& obj)
-	: factors(obj.factors), position(obj.position), metric(obj.metric), proba(obj.proba) {}
-
-    Object(std::vector<double> factors, int position, double metric, double proba)
-	: factors(factors), position(position), metric(metric), proba(proba) {}
-} Object;
-
 typedef std::vector<std::vector<double>> Matrix;
 
 class Pool {
