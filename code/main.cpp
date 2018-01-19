@@ -1,9 +1,12 @@
-#include "learning.h"
 #include <iostream>
 
+#include "metric.h"
+#include "model.h"
+
+
 int main() {
-    char pool_path[100] = "little_pool.json";
-    Pool pool = get_pool(pool_path);
+    char pool_path[100] = "../pool.json";
+    Pool pool = get_pool(pool_path, 90000);
     std::vector<int> positions_counter(POSITIONS.size(), 0);
 
     for (int i = 0; i < pool.size(); ++i) {
@@ -31,9 +34,14 @@ int main() {
     std::cout << "Train size: " << train_pool.size() << std::endl;
     std::cout << "Test size:  " << test_pool.size() << std::endl;
 
-    BoosterHandle booster = train(train_pool);
-    float result = test(test_pool, booster);
-    XGBoosterFree(booster);
-    std::cout << result << std::endl;
+    Model model(0.001, 1, 16, 50);
+    model.fit(train_pool.factors, train_pool.metrics);
+    std::vector<double> predicted_scores = model.predict(test_pool.factors);
+
+    std::vector<int> predicted_positions = get_positinos(predicted_scores);
+    for (int i = 0; i < 10; ++i)
+	std::cout << "Predicted pos: " << predicted_positions[i] << " Real pos: " << test_pool.positions[i] << std::endl;
+
+    std::cout << "Result metric: " << get_metric(test_pool, predicted_positions) << std::endl;
     return 0;
 }

@@ -4,11 +4,14 @@ CFLAGS=-std=c++11
 
 all: main
 
-main: learning utils
-	g++ main.cpp learning.o utils.o -o main $(CFLAGS) $(XGBFLAGS) $(XGBLIBS)
+main: metric model utils
+	g++ main.cpp metric.o utils.o model.o -o main $(CFLAGS)
 
-learning:
-	g++ -c learning.cpp -o learning.o $(CFLAGS) $(XGBFLAGS)
+model:
+	g++ -c model.cpp -o model.o $(CFLAGS)
+
+metric:
+	g++ -c metric.cpp -o metric.o $(CFLAGS)
 
 utils:
 	g++ -c utils.cpp -o utils.o $(CFLAGS)

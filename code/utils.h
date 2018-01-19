@@ -5,32 +5,32 @@
 #include <memory>
 
 typedef struct Object {
-    std::vector<float> factors;
+    std::vector<double> factors;
     int position;
-    float metric;
-    float proba;
+    double metric;
+    double proba;
     Object() = default;
 
     Object(const Object& obj)
 	: factors(obj.factors), position(obj.position), metric(obj.metric), proba(obj.proba) {}
 
-    Object(std::vector<float> factors, int position, float metric, float proba)
+    Object(std::vector<double> factors, int position, double metric, double proba)
 	: factors(factors), position(position), metric(metric), proba(proba) {}
 } Object;
 
-typedef std::vector<std::vector<float>> Matrix;
+typedef std::vector<std::vector<double>> Matrix;
 
 class Pool {
 public:
     short is_train; // 1 - train, 0 - test, -1 - not splited
-    std::vector<std::vector<float>> factors;
+    std::vector<std::vector<double>> factors;
     std::vector<int> positions;
-    std::vector<float> metrics;
-    std::vector<float> probas;
+    std::vector<double> metrics;
+    std::vector<double> probas;
     Pool() : is_train(-1) {};
     void reserve(int size);
     int size() const;
-    std::pair<Pool, Pool> train_test_split(float train_share);
+    std::pair<Pool, Pool> train_test_split(double train_share);
     Matrix get_train_features();
     Matrix get_test_features();
 };
