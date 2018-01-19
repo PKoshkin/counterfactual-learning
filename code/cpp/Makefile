@@ -5,7 +5,7 @@ CFLAGS=-std=c++11
 all: main
 
 main: metric model utils
-	g++ main.cpp metric.o utils.o model.o -o main $(CFLAGS)
+	g++ main.cpp counterfactural_model.h metric.o utils.o model.o -o main $(CFLAGS)
 
 model:
 	g++ -c model.cpp -o model.o $(CFLAGS)
