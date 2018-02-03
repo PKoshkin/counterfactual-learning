@@ -1,11 +1,22 @@
 #include "utils.h"
 
 #include <utility>
+#include <exception>
 #include <cassert>
 #include <cstring>
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
+
+class index_out_of_range: public runtime_error {
+    virtual const char* what() const throw() {
+        return "Index out of range";
+    }
+};
+
+
+Object::Object(int position, double metric, double proba, const std::vector<double> factors)
+    : position(position), metric(metric), proba(proba), factors(factors) {}
 
 
 int Pool::size() const {
@@ -19,6 +30,15 @@ void Pool::reserve(int size) {
     probas.reserve(size);
 }
 
+
+void Pool::resize(int size) {
+    factors.resize(size);
+    positions.resize(size);
+    metrics.resize(size);
+    probas.resize(size);
+}
+
+
 void Pool::assign(const Pool& pool, int begin, int end) {
     if (end == -1) {
         end = begin;
@@ -29,6 +49,17 @@ void Pool::assign(const Pool& pool, int begin, int end) {
     positions.assign(pool.positions.begin() + begin, pool.positions.begin() + end);
     probas.assign(pool.probas.begin() + begin, pool.probas.begin() + end);
     metrics.assign(pool.metrics.begin() + begin, pool.metrics.begin() + end);
+}
+
+
+void Pool::assign(const Pool& pool, std::vector<int> indexes, int end = -1) {
+    if (end < 0 || end > indexes.size())
+        end = indexes.size();
+
+    resize(end);
+
+    for (int ind = 0; ind < end; ++ind)
+        set(ind, pool.get(indexes[ind]));
 }
 
 
@@ -45,6 +76,46 @@ std::vector<Pool> Pool::split_by_positions() const {
     }
 
     return result;
+}
+
+
+void Pool::push_back(const Object& obj) {
+    positions.push_back(obj.position);
+    metrics.push_back(obj.metric);
+    probas.push_back(obj.probas);
+    factors.push_back(obj.factors);
+}
+
+
+void Pool::set(int index, const Object& obj) {
+    if (index < size()) {
+        positions[index] = obj.position;
+        metrics[index] = obj.metric;
+        probas[index] = obj.proba;
+        factors[index] = obj.factors;
+    } else {
+        throw index_out_of_range();
+    }
+}
+
+
+void Pool::set(int index, int position, double metric, double proba, const std::vector<double>& factors) {
+    if (index < size()) {
+        positions[index] = position;
+        metrics[index] = metric;
+        probas[index] = proba;
+        this->factors[index] = factors;
+    } else {
+        throw index_out_of_range();
+    }
+}
+
+
+Object Pool::get(uint16_t index) {
+    if (index < size())
+        return Object(positions[index], metrics[index], probas[index], factors[index]);
+    else
+        throw index_out_of_range();
 }
 
 
@@ -122,5 +193,14 @@ Pool get_pool(std::string file_name, int max_line, int start_size) {
     }
 
     fclose(file);
+    return result;
+}
+
+
+std::vector<int> get_permutation(int size) {
+    std::vector<int> result(size);
+    for (int i = 0; i < size; ++i)
+    result[i] = i;
+    std::random_shuffle(result.begin(), result.end());
     return result;
 }

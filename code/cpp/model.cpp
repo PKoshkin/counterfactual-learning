@@ -5,15 +5,6 @@
 #include "model.h"
 
 
-std::vector<int> get_permutation(int size) {
-    std::vector<int> result(size);
-    for (int i = 0; i < size; ++i)
-    result[i] = i;
-    std::random_shuffle(result.begin(), result.end());
-    return result;
-}
-
-
 std::vector<double> LinearRegression::predict(const Matrix& features) {
     std::vector<double> result(features.size(), 0);
 
@@ -55,6 +46,20 @@ LinearRegression::LinearRegression(double lr, double reg_lambda, int batch_size,
 
 
 std::vector<double> LinearRegression::get_gradient(const std::vector<double>& features, double score) {
+    std::vector<double> result = features;
+
+    double margin_exp = std::exp(score * predict({features})[0]);
+    double coef = -score / (1 + margin_exp);
+
+    for (int i = 0; i < result.size(); ++i) {
+	result[i] *= coef;
+	result[i] += 2 * reg_lambda * weights[i];
+    }
+
+    // std::cout << coef << " " << score << " " << -score * predict({features})[0] << std::endl;
+    return result;
+
+    /*
     double prediction = predict({features})[0];
     std::vector<double> result = features;
     for (int i = 0; i < features.size(); ++i) {
@@ -67,11 +72,21 @@ std::vector<double> LinearRegression::get_gradient(const std::vector<double>& fe
             result[i] = -gradient_clip;
 
     }
-    return result;
+    return result;*/
 }
 
 
 double LinearRegression::loss(const Matrix& features, std::vector<double> scores) {
+    double loss = 0;
+
+    for (int i = 0; i < features.size(); ++i)
+	loss += std::log(1 + std::exp(-scores[i] * predict({features[i]})[0]));
+
+    for (int i = 0; i < weights.size(); ++i)
+	loss += weights[i] * weights[i];
+
+    return loss;
+    /*
     double loss = 0;
 
     for (int i = 0; i < features.size(); ++i) {
@@ -83,5 +98,5 @@ double LinearRegression::loss(const Matrix& features, std::vector<double> scores
     for (int i = 0; i < weights.size(); ++i)
          loss += weights[i] * weights[i];
 
-    return loss;
+    return loss;*/
 }
