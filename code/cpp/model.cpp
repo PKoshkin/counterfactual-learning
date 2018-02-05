@@ -5,7 +5,7 @@
 #include "model.h"
 
 
-std::vector<double> LinearRegression::predict(const Matrix& features) {
+virtual std::vector<double> LogisticRegression::predict(const Matrix& features) {
     std::vector<double> result(features.size(), 0);
 
     for (int i = 0; i < features.size(); ++i)
@@ -16,7 +16,7 @@ std::vector<double> LinearRegression::predict(const Matrix& features) {
 }
 
 
-void LinearRegression::fit(const Matrix& features, const std::vector<double>& scores) {
+virtual void LogisticRegression::fit(const Matrix& features, const std::vector<double>& scores) {
     weights.resize(features[0].size(), 0);
 
     for (int iter = 0; iter < iterations_number; ++iter) {
@@ -41,11 +41,11 @@ void LinearRegression::fit(const Matrix& features, const std::vector<double>& sc
 }
 
 
-LinearRegression::LinearRegression(double lr, double reg_lambda, int batch_size, int iterations_number, double gradient_clip)
+LogisticRegression::LogisticRegression(double lr, double reg_lambda, int batch_size, int iterations_number, double gradient_clip)
     : lr(lr), reg_lambda(reg_lambda), batch_size(batch_size), iterations_number(iterations_number), gradient_clip(gradient_clip) {}
 
 
-std::vector<double> LinearRegression::get_gradient(const std::vector<double>& features, double score) {
+virtual std::vector<double> LogisticRegression::get_gradient(const std::vector<double>& features, double score) {
     std::vector<double> result = features;
 
     double margin_exp = std::exp(score * predict({features})[0]);
@@ -76,7 +76,7 @@ std::vector<double> LinearRegression::get_gradient(const std::vector<double>& fe
 }
 
 
-double LinearRegression::loss(const Matrix& features, std::vector<double> scores) {
+double LogisticRegression::loss(const Matrix& features, std::vector<double> scores) {
     double loss = 0;
 
     for (int i = 0; i < features.size(); ++i)

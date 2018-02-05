@@ -2,12 +2,22 @@
 
 #include "utils.h"
 
-class LinearRegression {
+
+class BaseModel {
 public:
-    std::vector<double> predict(const Matrix& features);
-    void fit(const Matrix& features, const std::vector<double>& scores);
+    virtual std::vector<double> predict(const Matrix& features) = 0;
+    virtual void fit(const Matrix& features, const std::vector<double>& scores) = 0;
+private:
+    virtual std::vector<double> get_gradient(const std::vector<double>& features, double score) = 0;
+}
+
+
+class LogisticRegression : public BaseModel{
+public:
+    virtual std::vector<double> predict(const Matrix& features);
+    virtual void fit(const Matrix& features, const std::vector<double>& scores);
     double loss(const Matrix& features, std::vector<double> score);
-    LinearRegression(double lr, double reg_lambda, int batch_size, int iterations_number, double gradient_clip);
+    LogisticRegression(double lr, double reg_lambda, int batch_size, int iterations_number, double gradient_clip);
 private:
     double lr;
     double reg_lambda;
@@ -16,5 +26,8 @@ private:
     double gradient_clip;
     std::vector<double> weights;
 
-    std::vector<double> get_gradient(const std::vector<double>& features, double score);
+    virtual std::vector<double> get_gradient(const std::vector<double>& features, double score);
 };
+
+
+// TODO: add LinearRegression
