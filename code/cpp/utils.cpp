@@ -1,5 +1,6 @@
 #include "utils.h"
 
+#include <algorithm>
 #include <utility>
 #include <exception>
 #include <cassert>
@@ -7,12 +8,6 @@
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
-
-class index_out_of_range: public runtime_error {
-    virtual const char* what() const throw() {
-        return "Index out of range";
-    }
-};
 
 
 Object::Object(int position, double metric, double proba, const std::vector<double> factors)
@@ -52,14 +47,11 @@ void Pool::assign(const Pool& pool, int begin, int end) {
 }
 
 
-void Pool::assign(const Pool& pool, std::vector<int> indexes, int end = -1) {
-    if (end < 0 || end > indexes.size())
-        end = indexes.size();
+void Pool::assign(const Pool& pool, std::vector<int>::iterator begin, std::vector<int>::iterator end) {
+    resize(end - begin);
 
-    resize(end);
-
-    for (int ind = 0; ind < end; ++ind)
-        set(ind, pool.get(indexes[ind]));
+    for (auto it = begin; it != end; ++it)
+        set(it - begin, pool.get(*it));
 }
 
 
@@ -82,8 +74,16 @@ std::vector<Pool> Pool::split_by_positions() const {
 void Pool::push_back(const Object& obj) {
     positions.push_back(obj.position);
     metrics.push_back(obj.metric);
-    probas.push_back(obj.probas);
+    probas.push_back(obj.proba);
     factors.push_back(obj.factors);
+}
+
+
+void Pool::erase(int index) {
+    positions.erase(positions.begin() + index);
+    probas.erase(probas.begin() + index);
+    metrics.erase(metrics.begin() + index);
+    factors.erase(factors.begin() + index);
 }
 
 
@@ -94,7 +94,7 @@ void Pool::set(int index, const Object& obj) {
         probas[index] = obj.proba;
         factors[index] = obj.factors;
     } else {
-        throw index_out_of_range();
+        throw std::runtime_error("Pool index out of range");
     }
 }
 
@@ -106,16 +106,16 @@ void Pool::set(int index, int position, double metric, double proba, const std::
         probas[index] = proba;
         this->factors[index] = factors;
     } else {
-        throw index_out_of_range();
+        throw std::runtime_error("Pool index out of range");
     }
 }
 
 
-Object Pool::get(uint16_t index) {
+Object Pool::get(int index) const {
     if (index < size())
         return Object(positions[index], metrics[index], probas[index], factors[index]);
     else
-        throw index_out_of_range();
+        throw std::runtime_error("Pool index out of range");
 }
 
 

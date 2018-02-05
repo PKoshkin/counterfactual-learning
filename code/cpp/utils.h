@@ -27,12 +27,13 @@ public:
     void resize(int size);
     int size() const;
     void assign(const Pool& pool, int begin, int end = -1);
-    void assign(const Pool& pool, std::vector<int> indexes, int end = -1);
+    void assign(const Pool& pool, std::vector<int>::iterator begin, std::vector<int>::iterator end);
     std::vector<Pool> split_by_positions() const;
     void push_back(const Object& obj);
+    void erase(int index);
     void set(int index, const Object& obj);
     void set(int index, int position, double metric, double proba, const std::vector<double>& factors);
-    Object get(uint16_t index);
+    Object get(int index) const;
 };
 
 const int FACTORS_LEN = 1052;
