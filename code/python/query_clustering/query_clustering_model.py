@@ -28,16 +28,10 @@ class QueryClusteringModel:
             for word in words_wins
         }
 
-        percentilies = np.linspace(0, 100, len(self.models) + 1)[1:]
-        split_values = [np.percentile(list(word_avarage_wins.values()), percentile) for percentile in percentilies]
         result = []
         for feature, queries in zip(test_pool.features, test_pool.queries):
             average_win = np.mean([word_avarage_wins[word] for word in queries])
-            index = 0
-            for value in split_values:
-                if average_win <= value:
-                    break
-                index += 1
+            index = 0 if average_win < 0 else 1 if average_win == 0 else 2
             
             result.append(np.argmax([
                 self.models[index].predict(list(feature) + [position])

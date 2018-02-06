@@ -78,7 +78,8 @@ class Pool:
 
         return train_pool, test_pool
 
-    def split_by_queries(self, pools_number):
+    def split_by_queries(self):
+        POOLS_NUMBER = 3
         words = {word for query in self.queries for word in query}
         words_wins = {word: [] for word in words}
         for label, query in zip(self.labels, self.queries):
@@ -89,18 +90,11 @@ class Pool:
             for word in words_wins
         }
 
-        pools = [Pool() for i in range(pools_number)]
-        percentilies = np.linspace(0, 100, pools_number + 1)[1:]
-        split_values = [np.percentile(list(word_avarage_wins.values()), percentile) for percentile in percentilies]
+        pools = [Pool() for i in range(POOLS_NUMBER)]
 
         for feature, position, proba, label, queries in zip(self.features, self.positions, self.probas, self.labels, self.queries):
             average_win = np.mean([word_avarage_wins[word] for word in queries])
-            index = 0
-            for value in split_values:
-                if average_win <= value:
-                    break
-                index += 1
-
+            index = 0 if average_win < 0 else 1 if average_win == 0 else 2
             pools[index].features.append(feature)
             pools[index].positions.append(position)
             pools[index].probas.append(proba)
