@@ -15,8 +15,8 @@ int main() {
     auto pool_pair = train_test_split(pool, 0.75);
     Pool train_pool = pool_pair.first;
     Pool test_pool = pool_pair.second;
-    PoolBasedUncertaintySamplingStrategy<LogisticRegression> strategy;
-    test_pool_based_strategy<LogisticRegression>(&strategy, train_pool, test_pool, "al_test_results.txt");
+    PoolBasedUncertaintySamplingStrategy strategy;
+    test_pool_based_strategy(&strategy, train_pool, test_pool, "al_test_results.txt", 2);
 
     return 0;
 }

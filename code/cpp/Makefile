@@ -4,8 +4,20 @@ CFLAGS=-std=c++11
 
 all: main
 
-main: metric model utils pool
-	g++ al_main.cpp counterfactural_model.h metric.o utils.o model.o active_learning_algo.h pool.o active_learning_strategies.h al_utils.h -o main $(CFLAGS)
+main: metric model utils pool counterfactural_model active_learning_strategies active_learning_algo al_utils
+	g++ al_main.cpp counterfactural_model.o metric.o utils.o model.o active_learning_algo.o pool.o active_learning_strategies.o al_utils.o -o main $(CFLAGS)
+
+al_utils:
+	g++ -c al_utils.cpp -o al_utils.o $(CFLAGS)
+
+counterfactural_model:
+	g++ -c counterfactural_model.cpp -o counterfactural_model.o $(CFLAGS)
+
+active_learning_strategies:
+	g++ -c active_learning_strategies.cpp -o active_learning_strategies.o $(CFLAGS)
+
+active_learning_algo:
+	g++ -c active_learning_algo.cpp -o active_learning_algo.o $(CFLAGS)
 
 pool:
 	g++ -c pool.cpp -o pool.o $(CFLAGS)
