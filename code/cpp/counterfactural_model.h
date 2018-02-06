@@ -27,7 +27,6 @@ template<class Model>
 void CounterfacturalModel<Model>::fit(const Pool& train_pool) {
     std::vector<Pool> splited_pool = train_pool.split_by_positions();
     for (int i = 0; i < splited_pool.size(); ++i) {
-        // std::cout << std::endl << i << " model start training\n" << std::endl;
         models[i].fit(splited_pool[i].factors, splited_pool[i].metrics);
     }
 }

@@ -1,6 +1,7 @@
 *.o
 main
 vgcore.*
+little_pool.json
 *.model
 *.txt
 xgboost

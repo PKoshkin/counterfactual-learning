@@ -9,8 +9,8 @@ std::vector<double> LogisticRegression::predict(const Matrix& features) const {
     std::vector<double> result(features.size(), 0);
 
     for (int i = 0; i < features.size(); ++i)
-    for (int j = 0; j < features[i].size(); ++j)
-        result[i] += weights[j] * features[i][j];
+        for (int j = 0; j < features[i].size(); ++j)
+            result[i] += weights[j] * features[i][j];
 
     return result;
 }
@@ -22,7 +22,7 @@ void LogisticRegression::fit(const Matrix& features, const std::vector<double>& 
     for (int iter = 0; iter < iterations_number; ++iter) {
         std::vector<int> random_permutation = get_permutation(features.size());
 
-        for (int batch_start = 0; batch_start < batch_size * 8; batch_start += batch_size) {
+        for (int batch_start = 0; batch_start < features.size(); batch_start += batch_size) {
             std::vector<double> gradient(weights.size(), 0);
             for (int index = batch_start; index < std::min(batch_start + batch_size, int(features.size())); ++index) {
                 int pool_ind = random_permutation[index];
