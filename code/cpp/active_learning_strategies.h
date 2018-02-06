@@ -21,7 +21,7 @@ public:
 template<class Model>
 class PoolBasedUncertaintySamplingStrategy : public BasePoolBasedActiveLearningStrategy<Model>{
 public:
-    static std::string name = "Uncertainty Sampling";
+    //static std::string const name;
     virtual double get_score(const CounterfacturalModel<Model>& current_model,
                              const std::list<Object>& unlabeled_pool,
                              const Pool& labeled_pool,
@@ -42,4 +42,3 @@ double PoolBasedUncertaintySamplingStrategy<Model>::get_score(const Counterfactu
 
     return gini_score;
 }
-

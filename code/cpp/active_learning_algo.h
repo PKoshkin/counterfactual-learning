@@ -18,7 +18,7 @@ private:
     uint16_t batch_size;
     BasePoolBasedActiveLearningStrategy<Model>* strategy;
 public:
-    static std::string name = "Pool-based";
+    // static std::string name = "Pool-based";
     PoolBasedActiveLearningAlgo(const CounterfacturalModel<Model>& model,
                                 const Pool& pool,
                                 BasePoolBasedActiveLearningStrategy<Model>* strategy,
