@@ -13,7 +13,6 @@ int main() {
     std::srand(std::time(0));
     char pool_path[100] = "../../pool.json";
     Pool pool = get_pool(pool_path, 90000);
-    //TODO: move these prints into get_pool
     std::vector<int> positions_counter(pool.POSITIONS.size(), 0);
 
     for (int i = 0; i < pool.size(); ++i) {
@@ -45,7 +44,6 @@ int main() {
     CounterfacturalModel<LogisticRegression> model(models_vector);
     model.fit(train_pool);
 
-    //TODO: move these prints into function, may be CounterfacturalModel's method
     std::vector<int> predicted_positions = model.predict(test_pool);
 
     for (int i = 0; i < 10; ++i)
