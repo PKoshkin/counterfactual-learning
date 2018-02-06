@@ -14,6 +14,7 @@ class Pool:
             self.probas = []
             self.labels = []
             self.queries = []
+            self.prod_positions = []
         elif len(args) == 1:
             if type(args[0]) != str:
                 raise PoolError("Wrong constructor arguments")
@@ -35,24 +36,30 @@ class Pool:
                     list(map(int, line['query'].split(' ')))
                     for line in data
                 ]
+                self.prod_positions = [
+                    int(line['prod_pos'])
+                    for line in data
+                ]
 
-    def set(self, features, positions, probas, labels, queries):
+    def set(self, features, positions, probas, labels, queries, prod_positions):
         self.features = features
         self.positions = positions
         self.probas = probas
         self.labels = labels
         self.queries = queries
+        self.prod_positions = prod_positions
 
     def split_by_position(self):
         pools = [Pool() for position in self.POSITIONS]
 
-        for feature, position, proba, label, queries in zip(self.features, self.positions, self.probas, self.labels, self.queries):
+        for feature, position, proba, label, queries, prod_positions in zip(self.features, self.positions, self.probas, self.labels, self.queries, self.prod_positions):
             index = position if position in list(range(10)) else 10
             pools[index].features.append(feature)
             pools[index].positions.append(position)
             pools[index].probas.append(proba)
             pools[index].labels.append(label)
             pools[index].queries.append(queries)
+            pools[index].prod_positions.append(prod_positions)
 
         for pool in pools:
             pool.features = np.array(pool.features)
@@ -60,6 +67,7 @@ class Pool:
             pool.probas = np.array(pool.probas)
             pool.labels = np.array(pool.labels)
             pool.queries = np.array(pool.queries)
+            pool.prod_positions = np.array(pool.prod_positions)
 
         return pools
 
@@ -68,13 +76,14 @@ class Pool:
         positions_train, positions_test,\
         labels_train, labels_test,\
         proba_train, proba_test,\
-        queries_train, queries_test = train_test_split(
-            self.features, self.positions, self.labels, self.probas, self.queries, test_size=test_size, shuffle=True
+        queries_train, queries_test,\
+        prod_positions_train, prod_positions_test = train_test_split(
+            self.features, self.positions, self.labels, self.probas, self.queries, self.prod_positions, test_size=test_size, shuffle=True
         )
 
         test_pool, train_pool = Pool(), Pool()
-        test_pool.set(features_test, positions_test, proba_test, labels_test, queries_test)
-        train_pool.set(features_train, positions_train, proba_train, labels_train, queries_train)
+        test_pool.set(features_test, positions_test, proba_test, labels_test, queries_test, prod_positions_test)
+        train_pool.set(features_train, positions_train, proba_train, labels_train, queries_train, prod_positions_train)
 
         return train_pool, test_pool
 
@@ -92,7 +101,7 @@ class Pool:
 
         pools = [Pool() for i in range(POOLS_NUMBER)]
 
-        for feature, position, proba, label, queries in zip(self.features, self.positions, self.probas, self.labels, self.queries):
+        for feature, position, proba, label, queries, prod_positions in zip(self.features, self.positions, self.probas, self.labels, self.queries, self.prod_positions):
             average_win = np.mean([word_avarage_wins[word] for word in queries])
             index = 0 if average_win < 0 else 1 if average_win == 0 else 2
             pools[index].features.append(feature)
@@ -100,6 +109,7 @@ class Pool:
             pools[index].probas.append(proba)
             pools[index].labels.append(label)
             pools[index].queries.append(queries)
+            pools[index].prod_positions.append(prod_positions)
 
         for pool in pools:
             pool.features = np.array(pool.features)
@@ -107,5 +117,6 @@ class Pool:
             pool.probas = np.array(pool.probas)
             pool.labels = np.array(pool.labels)
             pool.queries = np.array(pool.queries)
+            pool.prod_positions = np.array(pool.prod_positions)
 
         return pools
