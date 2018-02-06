@@ -13,6 +13,7 @@ class Pool:
             self.positions = []
             self.probas = []
             self.labels = []
+            self.queries = []
         elif len(args) == 1:
             if type(args[0]) != str:
                 raise PoolError("Wrong constructor arguments")
@@ -30,28 +31,35 @@ class Pool:
                     if line['images_metric'] is not None else 0
                     for line in data
                 ])
+                self.queries = [
+                    list(map(int, line['query'].split(' ')))
+                    for line in data
+                ]
 
-    def set(self, features, positions, probas, labels):
+    def set(self, features, positions, probas, labels, queries):
         self.features = features
         self.positions = positions
         self.probas = probas
         self.labels = labels
+        self.queries = queries
 
     def split_by_position(self):
         pools = [Pool() for position in self.POSITIONS]
 
-        for feature, position, proba, label in zip(self.features, self.positions, self.probas, self.labels):
+        for feature, position, proba, label, queries in zip(self.features, self.positions, self.probas, self.labels, self.queries):
             index = position if position in list(range(10)) else 10
             pools[index].features.append(feature)
             pools[index].positions.append(position)
             pools[index].probas.append(proba)
             pools[index].labels.append(label)
+            pools[index].queries.append(queries)
 
         for pool in pools:
             pool.features = np.array(pool.features)
             pool.positions = np.array(pool.positions)
             pool.probas = np.array(pool.probas)
             pool.labels = np.array(pool.labels)
+            pool.queries = np.array(pool.queries)
 
         return pools
 
@@ -59,12 +67,51 @@ class Pool:
         features_train, features_test,\
         positions_train, positions_test,\
         labels_train, labels_test,\
-        proba_train, proba_test = train_test_split(
-            self.features, self.positions, self.labels, self.probas, test_size=test_size, shuffle=True
+        proba_train, proba_test,\
+        queries_train, queries_test = train_test_split(
+            self.features, self.positions, self.labels, self.probas, self.queries, test_size=test_size, shuffle=True
         )
 
         test_pool, train_pool = Pool(), Pool()
-        test_pool.set(features_test, positions_test, proba_test, labels_test)
-        train_pool.set(features_train, positions_train, proba_train, labels_train)
+        test_pool.set(features_test, positions_test, proba_test, labels_test, queries_test)
+        train_pool.set(features_train, positions_train, proba_train, labels_train, queries_train)
 
         return train_pool, test_pool
+
+    def split_by_queries(self, pools_number):
+        words = {word for query in self.queries for word in query}
+        words_wins = {word: [] for word in words}
+        for label, query in zip(self.labels, self.queries):
+            for word in query:
+                words_wins[word].append(label)
+        word_avarage_wins = {
+            word: np.mean(words_wins[word])
+            for word in words_wins
+        }
+
+        pools = [Pool() for i in range(pools_number)]
+        percentilies = np.linspace(0, 100, pools_number + 1)[1:]
+        split_values = [np.percentile(list(word_avarage_wins.values()), percentile) for percentile in percentilies]
+
+        for feature, position, proba, label, queries in zip(self.features, self.positions, self.probas, self.labels, self.queries):
+            average_win = np.mean([word_avarage_wins[word] for word in queries])
+            index = 0
+            for value in split_values:
+                if average_win <= value:
+                    break
+                index += 1
+
+            pools[index].features.append(feature)
+            pools[index].positions.append(position)
+            pools[index].probas.append(proba)
+            pools[index].labels.append(label)
+            pools[index].queries.append(queries)
+
+        for pool in pools:
+            pool.features = np.array(pool.features)
+            pool.positions = np.array(pool.positions)
+            pool.probas = np.array(pool.probas)
+            pool.labels = np.array(pool.labels)
+            pool.queries = np.array(pool.queries)
+
+        return pools
