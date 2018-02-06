@@ -1,7 +1,6 @@
 *.o
 main
 vgcore.*
-*pool*
 *.model
 *.txt
 xgboost
