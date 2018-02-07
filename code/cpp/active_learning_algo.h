@@ -7,21 +7,27 @@
 #include <list>
 
 
-class PoolBasedActiveLearningAlgo {
+class ActiveLearningAlgo {
+public:
+    virtual std::string name() = 0;
+    virtual CounterfacturalModel* train(const Pool& train_pool) = 0;
+};
+
+
+class PoolBasedActiveLearningAlgo : public ActiveLearningAlgo {
 private:
-    CounterfacturalModel model;
-    std::list<Object> unlabeled_pool;
-    Pool labeled_pool;
+    CounterfacturalModel* model;
     uint16_t max_labels;
     uint16_t batch_size;
+    uint16_t initial_size;
     BasePoolBasedActiveLearningStrategy* strategy;
 public:
-    // static std::string name = "Pool-based";
-    PoolBasedActiveLearningAlgo(const CounterfacturalModel& model,
-                                const Pool& pool,
-                                BasePoolBasedActiveLearningStrategy* strategy,
-                                uint16_t initial_size = 100,
-                                uint16_t batch_size = 5,
-                                uint16_t max_labels = 0);
-    CounterfacturalModel train();
+    virtual std::string name();
+    PoolBasedActiveLearningAlgo(
+            CounterfacturalModel* model,
+            BasePoolBasedActiveLearningStrategy* strategy,
+            uint16_t initial_size = 1000,
+            uint16_t batch_size = 200,
+            uint16_t max_labels = 2000);
+    virtual CounterfacturalModel* train(const Pool& train_pool);
 };

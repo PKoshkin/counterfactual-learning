@@ -15,8 +15,16 @@ int main() {
     auto pool_pair = train_test_split(pool, 0.75);
     Pool train_pool = pool_pair.first;
     Pool test_pool = pool_pair.second;
+
+    std::vector<LogisticRegression> models_vector(train_pool.POSITIONS.size(), LogisticRegression(0.0000005, 1, 16, 5, 100));
+    std::vector<BaseModel*> models_pointers(models_vector.size());
+    for (int i = 0; i < models_vector.size(); ++i)
+        models_pointers[i] = &models_vector[i];
+
+    ElevenRegressions model(models_pointers);
     PoolBasedUncertaintySamplingStrategy strategy;
-    test_pool_based_strategy(&strategy, train_pool, test_pool, "al_test_results.txt", 2);
+    PoolBasedActiveLearningAlgo active_learning_algo(&model, &strategy, 1000, 200, 2000);
+    test_pool_based_strategy(&active_learning_algo, train_pool, test_pool, "al_test_results.txt", 2);
 
     return 0;
 }

@@ -4,10 +4,10 @@
 #include "counterfactural_model.h"
 
 
-CounterfacturalModel::CounterfacturalModel(std::vector<BaseModel*> models) : models(models) {}
+ElevenRegressions::ElevenRegressions(std::vector<BaseModel*> models) : models(models) {}
 
 
-void CounterfacturalModel::fit(const Pool& train_pool) {
+void ElevenRegressions::fit(const Pool& train_pool) {
     std::vector<Pool> splited_pool = train_pool.split_by_positions();
     for (int i = 0; i < splited_pool.size(); ++i) {
         models[i]->fit(splited_pool[i].factors, splited_pool[i].metrics);
@@ -15,7 +15,7 @@ void CounterfacturalModel::fit(const Pool& train_pool) {
 }
 
 
-std::vector<int> CounterfacturalModel::predict(const Pool& test_pool) const {
+std::vector<int> ElevenRegressions::predict(const Pool& test_pool) const {
     std::vector<int> result(test_pool.size());
 
     for (int i = 0; i < test_pool.size(); ++i) {
@@ -35,7 +35,7 @@ std::vector<int> CounterfacturalModel::predict(const Pool& test_pool) const {
 }
 
 
-std::vector<std::vector<double>> CounterfacturalModel::predict_proba(const Pool& test_pool) const {
+std::vector<std::vector<double>> ElevenRegressions::predict_proba(const Pool& test_pool) const {
     std::vector<std::vector<double>> result(test_pool.size(), std::vector<double>(models.size()));
 
     for (int i = 0; i < test_pool.size(); ++i)
@@ -45,7 +45,7 @@ std::vector<std::vector<double>> CounterfacturalModel::predict_proba(const Pool&
 }
 
 
-std::vector<double> CounterfacturalModel::predict_proba(const Object& object) const {
+std::vector<double> ElevenRegressions::predict_proba(const Object& object) const {
     std::vector<double> result(models.size());
     double exp_sum = 0;
 
