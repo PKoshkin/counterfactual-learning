@@ -5,12 +5,11 @@
 #include "model.h"
 
 
-std::vector<double> LogisticRegression::predict(const Matrix& features) const {
-    std::vector<double> result(features.size(), 0);
+double LogisticRegression::predict(const std::vector<double>& features) const {
+    double result = 0;
 
     for (int i = 0; i < features.size(); ++i)
-        for (int j = 0; j < features[i].size(); ++j)
-            result[i] += weights[j] * features[i][j];
+        result += weights[i] * features[i];
 
     return result;
 }
@@ -48,7 +47,7 @@ LogisticRegression::LogisticRegression(double lr, double reg_lambda, int batch_s
 std::vector<double> LogisticRegression::get_gradient(const std::vector<double>& features, double score) {
     std::vector<double> result = features;
 
-    double margin_exp = std::exp(score * predict({features})[0]);
+    double margin_exp = std::exp(score * predict(features));
     double coef = -score / (1 + margin_exp);
 
     for (int i = 0; i < result.size(); ++i) {
@@ -56,11 +55,11 @@ std::vector<double> LogisticRegression::get_gradient(const std::vector<double>& 
 	result[i] += 2 * reg_lambda * weights[i];
     }
 
-    // std::cout << coef << " " << score << " " << -score * predict({features})[0] << std::endl;
+    // std::cout << coef << " " << score << " " << -score * predict(features) << std::endl;
     return result;
 
     /*
-    double prediction = predict({features})[0];
+    double prediction = predict(features);
     std::vector<double> result = features;
     for (int i = 0; i < features.size(); ++i) {
         result[i] *= 2 * (prediction - score);
@@ -80,7 +79,7 @@ double LogisticRegression::loss(const Matrix& features, std::vector<double> scor
     double loss = 0;
 
     for (int i = 0; i < features.size(); ++i)
-	loss += std::log(1 + std::exp(-scores[i] * predict({features[i]})[0]));
+	loss += std::log(1 + std::exp(-scores[i] * predict(features[i])));
 
     for (int i = 0; i < weights.size(); ++i)
 	loss += weights[i] * weights[i];
@@ -90,7 +89,7 @@ double LogisticRegression::loss(const Matrix& features, std::vector<double> scor
     double loss = 0;
 
     for (int i = 0; i < features.size(); ++i) {
-        double prediction = predict({features[i]})[0];
+        double prediction = predict(features[i]);
         loss += (scores[i] - prediction) * (scores[i] - prediction);
     }
     loss /= features.size();

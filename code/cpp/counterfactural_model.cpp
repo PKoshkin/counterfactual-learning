@@ -22,7 +22,7 @@ std::vector<int> ElevenRegressions::predict(const Pool& test_pool) const {
         double max_score = -std::numeric_limits<double>::max();
         int max_position = -1;
         for (int model_index = 0; model_index < models.size(); ++model_index) {
-            double score = models[model_index]->predict({test_pool.factors[i]})[0];
+            double score = models[model_index]->predict(test_pool.factors[i]);
             if (score > max_score) {
                 max_position = test_pool.POSITIONS[model_index];
                 max_score = score;
@@ -50,7 +50,7 @@ std::vector<double> ElevenRegressions::predict_proba(const Object& object) const
     double exp_sum = 0;
 
     for (int model_index = 0; model_index < models.size(); ++model_index) {
-        result[model_index] = std::exp(models[model_index]->predict({object.factors})[0]);
+        result[model_index] = std::exp(models[model_index]->predict(object.factors));
         exp_sum += result[model_index];
     }
 
