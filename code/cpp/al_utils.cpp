@@ -46,6 +46,6 @@ void test_active_learning_algo(
         stream << "\nMean: " << mean << " std: " << std::sqrt(variance);
     }
 
-    stream << "\n=============================\n" << std::endl
+    stream << "\n=============================\n" << std::endl;
     stream.close();
 }

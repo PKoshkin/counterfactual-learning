@@ -1,5 +1,6 @@
 #include "utils.h"
 
+#include <cmath>
 #include <algorithm>
 #include <utility>
 #include <cassert>
@@ -99,4 +100,16 @@ std::vector<int> get_permutation(int size) {
     result[i] = i;
     std::random_shuffle(result.begin(), result.end());
     return result;
+}
+
+
+void softmax(std::vector<double>& array) {
+    double exp_sum = 0;
+    for (auto& iter: array) {
+        iter = std::exp(iter);
+        exp_sum += iter;
+    }
+
+    for (auto& iter: array)
+        iter /= exp_sum;
 }
