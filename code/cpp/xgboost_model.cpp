@@ -5,8 +5,6 @@ XGBoostModel::XGBoostModel(uint16_t iteration_number) : iteration_number(iterati
 
 
 void XGBoostModel::fit(const Matrix& features, const std::vector<double>& scores) {
-    std::cout << "\nPrepare data for training" << std::endl;
-
     DMatrixHandle train_data;
     const int rows = features.size();
     const int cols = features[0].size();
@@ -27,14 +25,10 @@ void XGBoostModel::fit(const Matrix& features, const std::vector<double>& scores
     XGBoosterSetParam(booster, "eta", "0.1");
     XGBoosterSetParam(booster, "silent", "1");
 
-    std::cout << "\nStart training" << std::endl;
-
     for (int iteration = 0; iteration < iteration_number; ++iteration)
 	XGBoosterUpdateOneIter(booster, iteration, train_data);
 
     XGDMatrixFree(train_data);
-
-    std::cout << "\nEnd training" << std::endl;
 }
 
 
@@ -53,5 +47,6 @@ double XGBoostModel::predict(const std::vector<double>& features) const {
     const float * prediction;
     XGBoosterPredict(booster, test_data, 0, 0, &out_len, &prediction);
 
+    XGDMatrixFree(test_data);
     return prediction[0];
 }

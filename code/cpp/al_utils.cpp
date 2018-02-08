@@ -17,7 +17,7 @@ void test_active_learning_algo(
     std::ofstream stream;
     stream.open(file_name);
 
-    stream << "Apply " << active_learning_algo->name() << std::endl;
+    stream << "Apply " << active_learning_algo->name() << "\n" << std::endl;
 
     std::vector<double> result_metrics(iteration_number);
 
@@ -43,8 +43,9 @@ void test_active_learning_algo(
             variance += (metric - mean) * (metric - mean);
         variance /= iteration_number - 1;
 
-        stream << "\nMean: " << mean << " std: " << std::sqrt(variance) << "\n=======================\n" << std::endl;
+        stream << "\nMean: " << mean << " std: " << std::sqrt(variance);
     }
 
+    stream << "\n=============================\n" << std::endl
     stream.close();
 }

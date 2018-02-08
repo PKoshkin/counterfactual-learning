@@ -18,6 +18,10 @@ std::string PoolBasedActiveLearningAlgo::name() {
     result += "pool-based active learning algorithm using ";
     result += strategy->name();
     result += " strategy";
+    if (max_labels == 0)
+        result += " and whole pool";
+    else
+        result += " and " + std::to_string(max_labels) + " queries max";
 
     return result;
 }
