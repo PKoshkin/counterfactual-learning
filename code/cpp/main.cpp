@@ -7,6 +7,7 @@
 #include "metric.h"
 #include "model.h"
 #include "counterfactural_model.h"
+#include "xgboost_model.h"
 
 
 int main() {
@@ -40,8 +41,8 @@ int main() {
     std::cout << "Train size: " << train_pool.size() << std::endl;
     std::cout << "Test size:  " << test_pool.size() << std::endl;
 
-    std::vector<LogisticRegression> models_vector(pool.POSITIONS.size(), LogisticRegression(0.0000005, 1, 16, 100, 100));
-    CounterfacturalModel<LogisticRegression> model(models_vector);
+    XGBoostModel base_model(10, 1800);
+    PositionToFeaturesModel model(&base_model, train_pool.POSITIONS);
     model.fit(train_pool);
 
     std::vector<int> predicted_positions = model.predict(test_pool);

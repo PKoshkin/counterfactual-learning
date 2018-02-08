@@ -20,8 +20,8 @@ int main() {
     PositionToFeaturesModel model(&base_model, train_pool.POSITIONS);
 
     PoolBasedUncertaintySamplingStrategy strategy;
-    PoolBasedActiveLearningAlgo active_learning_algo(&model, &strategy, 1000, 200, 2000);
-    test_active_learning_algo(&active_learning_algo, train_pool, test_pool, "al_test_results.txt", 2);
+    PoolBasedActiveLearningAlgo active_learning_algo(&model, &strategy, 50000, 500, 51000);
+    test_active_learning_algo(&active_learning_algo, train_pool, test_pool, "al_test_results.txt", 1);
 
     return 0;
 }

@@ -74,6 +74,7 @@ std::vector<int> PositionToFeaturesModel::predict(const Pool& test_pool) const {
     for (int i = 0; i < test_pool.size(); ++i) {
         std::vector<double> features = test_pool.factors[i];
         features.resize(features.size() + 1);
+
         double max_score = -std::numeric_limits<double>::max();
         int max_position = -1;
         for (auto pos: test_pool.POSITIONS) {
@@ -84,7 +85,6 @@ std::vector<int> PositionToFeaturesModel::predict(const Pool& test_pool) const {
                 max_score = score;
             }
         }
-
         result[i] = max_position;
     }
 
