@@ -34,21 +34,24 @@ int main() {
     }
     std::cout << "Total amount: " << sum << std::endl;
 
-    auto pool_pair = train_test_split(pool, 0.75);
+    auto pool_pair = train_test_split(pool, 1.0 / 90);
     Pool train_pool = pool_pair.first;
     Pool test_pool = pool_pair.second;
 
     std::cout << "Train size: " << train_pool.size() << std::endl;
     std::cout << "Test size:  " << test_pool.size() << std::endl;
 
+    /*
     std::vector<RidgeRegression> models_vector(pool.POSITIONS.size(), RidgeRegression(0.0000005, 1, 16, 100, 100));
     std::vector<BaseModel*> pointers_vector(train_pool.POSITIONS.size());
     for (int i = 0; i < train_pool.POSITIONS.size(); ++i)
         pointers_vector[i] = &models_vector[i];
     ElevenRegressionsModel model(pointers_vector);
+    */
 
-    // XGBoostModel base_model(10, 1800);
-    // PositionToFeaturesModel model(&base_model, train_pool.POSITIONS);
+    XGBoostModel base_model(10);
+    // RidgeRegression base_model(0.0000005, 1, 16, 100, 100);
+    PositionToFeaturesModel model(&base_model, train_pool.POSITIONS);
     model.fit(train_pool);
 
     std::vector<int> predicted_positions = model.predict(test_pool);

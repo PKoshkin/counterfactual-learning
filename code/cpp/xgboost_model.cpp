@@ -3,19 +3,26 @@
 #include <algorithm>
 
 
-XGBoostModel::XGBoostModel(uint16_t iteration_number, uint16_t batch_size)
-    : iteration_number(iteration_number), batch_size(batch_size) {}
+XGBoostModel::XGBoostModel(uint16_t iteration_number)
+    : iteration_number(iteration_number) {}
 
 
 void XGBoostModel::fit(const Matrix& features, const std::vector<double>& scores) {
     std::cout << "\nStart preparing data" << std::endl;
-    DMatrixHandle train_data;
-    const int cols = features[0].size();
-    float train_features[batch_size][cols] = {0};
-    float train_labels[batch_size] = {0};
 
-    XGDMatrixCreateFromMat((float *) train_features, batch_size, cols, -1, &train_data);
-    XGDMatrixSetFloatInfo(train_data, "label", train_labels, batch_size);
+    int rows = features.size();
+    int cols = features[0].size();
+    float* train_features = new float[rows * cols];
+    float* train_labels = new float[rows];
+    for (int row = 0; row < rows; ++row) {
+        for (int col = 0; col < cols; ++col)
+            train_features[row * cols + col] = static_cast<float>(features[row][col]);
+        train_labels[row] = static_cast<float>(scores[row]);
+    }
+
+    DMatrixHandle train_data;
+    XGDMatrixCreateFromMat(train_features, rows, cols, -1, &train_data);
+    XGDMatrixSetFloatInfo(train_data, "label", train_labels, rows);
 
     XGBoosterCreate(&train_data, 1, &booster);
     XGBoosterSetParam(booster, "booster", "gbtree");
@@ -39,22 +46,12 @@ void XGBoostModel::fit(const Matrix& features, const std::vector<double>& scores
 
     std::cout << "\nStart training" << std::endl;
 
-    for (int iteration = 0; iteration < iteration_number; ++iteration) {
-        for (int batch_start_ind = 0; batch_start_ind < features.size(); batch_start_ind += batch_size) {
-            int rows = std::min(batch_size, static_cast<uint16_t>(features.size() - batch_start_ind));
-            for (int row = 0; row < rows; ++row) {
-                for (int col = 0; col < cols; ++col)
-                    train_features[row][col] = static_cast<float>(features[batch_start_ind + row][col]);
-                train_labels[row] = static_cast<float>(scores[batch_start_ind + row]);
-            }
+    for (int iteration = 0; iteration < iteration_number; ++iteration)
+        XGBoosterUpdateOneIter(booster, iteration, train_data);
 
-            XGDMatrixCreateFromMat((float *) train_features, rows, cols, -1, &train_data);
-            XGDMatrixSetFloatInfo(train_data, "label", train_labels, rows);
-
-            XGBoosterUpdateOneIter(booster, iteration, train_data);
-            XGDMatrixFree(train_data);
-        }
-    }
+    delete[] train_features;
+    delete[] train_labels;
+    XGDMatrixFree(train_data);
 
     std::cout << "\nEnd training" << std::endl;
 }
