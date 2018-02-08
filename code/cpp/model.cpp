@@ -5,7 +5,7 @@
 #include "model.h"
 
 
-double LogisticRegression::predict(const std::vector<double>& features) const {
+double LinearRegression::predict(const std::vector<double>& features) const {
     double result = 0;
 
     for (int i = 0; i < features.size(); ++i)
@@ -15,7 +15,7 @@ double LogisticRegression::predict(const std::vector<double>& features) const {
 }
 
 
-void LogisticRegression::fit(const Matrix& features, const std::vector<double>& scores) {
+void LinearRegression::fit(const Matrix& features, const std::vector<double>& scores) {
     weights.resize(features[0].size(), 0);
 
     for (int iter = 0; iter < iterations_number; ++iter) {
@@ -40,7 +40,7 @@ void LogisticRegression::fit(const Matrix& features, const std::vector<double>& 
 }
 
 
-LogisticRegression::LogisticRegression(double lr, double reg_lambda, int batch_size, int iterations_number, double gradient_clip)
+LinearRegression::LinearRegression(double lr, double reg_lambda, int batch_size, int iterations_number, double gradient_clip)
     : lr(lr), reg_lambda(reg_lambda), batch_size(batch_size), iterations_number(iterations_number), gradient_clip(gradient_clip) {}
 
 
@@ -53,25 +53,15 @@ std::vector<double> LogisticRegression::get_gradient(const std::vector<double>& 
     for (int i = 0; i < result.size(); ++i) {
 	result[i] *= coef;
 	result[i] += 2 * reg_lambda * weights[i];
-    }
-
-    // std::cout << coef << " " << score << " " << -score * predict(features) << std::endl;
-    return result;
-
-    /*
-    double prediction = predict(features);
-    std::vector<double> result = features;
-    for (int i = 0; i < features.size(); ++i) {
-        result[i] *= 2 * (prediction - score);
-        result[i] += 2 * reg_lambda * weights[i];
 
         if (result[i] > gradient_clip)
             result[i] = gradient_clip;
         if (result[i] < -gradient_clip)
             result[i] = -gradient_clip;
-
     }
-    return result;*/
+
+    // std::cout << coef << " " << score << " " << -score * predict(features) << std::endl;
+    return result;
 }
 
 
@@ -85,7 +75,28 @@ double LogisticRegression::loss(const Matrix& features, std::vector<double> scor
 	loss += weights[i] * weights[i];
 
     return loss;
-    /*
+}
+
+
+std::vector<double> RidgeRegression::get_gradient(const std::vector<double>& features, double score) {
+    std::vector<double> result = features;
+    double prediction = predict(features);
+
+    for (int i = 0; i < features.size(); ++i) {
+        result[i] *= 2 * (prediction - score);
+        result[i] += 2 * reg_lambda * weights[i];
+
+        if (result[i] > gradient_clip)
+            result[i] = gradient_clip;
+        if (result[i] < -gradient_clip)
+            result[i] = -gradient_clip;
+    }
+
+    return result;
+}
+
+
+double RidgeRegression::loss(const Matrix& features, std::vector<double> scores) {
     double loss = 0;
 
     for (int i = 0; i < features.size(); ++i) {
@@ -97,5 +108,5 @@ double LogisticRegression::loss(const Matrix& features, std::vector<double> scor
     for (int i = 0; i < weights.size(); ++i)
          loss += weights[i] * weights[i];
 
-    return loss;*/
+    return loss;
 }
