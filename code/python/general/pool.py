@@ -8,13 +8,10 @@ class PoolError(Exception):
 class Pool:
     def __init__(self, *args):
         self.POSITIONS = list(range(10)) + [100]
+        self.fields = ['features', 'positions', 'probas', 'targets', 'queries', 'prod_positions', 'classification_labels']
         if len(args) == 0:
-            self.features = []
-            self.positions = []
-            self.probas = []
-            self.labels = []
-            self.queries = []
-            self.prod_positions = []
+            for field in self.fields:
+                self.__dict__[field] = []
         elif len(args) == 1:
             if type(args[0]) != str:
                 raise PoolError("Wrong constructor arguments")
@@ -27,7 +24,7 @@ class Pool:
                     for line in data
                 ])
                 self.probas = np.array([line['p'] for line in data])
-                self.labels = np.array([
+                self.targets = np.array([
                     (line['images_metric'][2] - line['images_metric'][1])
                     if line['images_metric'] is not None else 0
                     for line in data
@@ -40,50 +37,46 @@ class Pool:
                     int(line['prod_pos'])
                     for line in data
                 ]
+                self.classification_labels = [
+                    (1 if (line['images_metric'][2] - line['images_metric'][1]) > 0 else 0)
+                    if line['images_metric'] is not None else 0
+                    for line in data
+                ]
 
-    def set(self, features, positions, probas, labels, queries, prod_positions):
-        self.features = features
-        self.positions = positions
-        self.probas = probas
-        self.labels = labels
-        self.queries = queries
-        self.prod_positions = prod_positions
+    def set(self, *args):
+        for field, value in zip(self.fields, args):
+            self.__dict__[field] = value
 
     def split_by_position(self):
         pools = [Pool() for position in self.POSITIONS]
 
-        for feature, position, proba, label, queries, prod_positions in zip(self.features, self.positions, self.probas, self.labels, self.queries, self.prod_positions):
-            index = position if position in list(range(10)) else 10
-            pools[index].features.append(feature)
-            pools[index].positions.append(position)
-            pools[index].probas.append(proba)
-            pools[index].labels.append(label)
-            pools[index].queries.append(queries)
-            pools[index].prod_positions.append(prod_positions)
+        for i in range(len(self.features)):
+            index = self.position[i] if self.position[i] in list(range(10)) else 10
+            for field in self.fields:
+                pools[index].__dict__[field].append(self.__dict__[field][i])
 
         for pool in pools:
-            pool.features = np.array(pool.features)
-            pool.positions = np.array(pool.positions)
-            pool.probas = np.array(pool.probas)
-            pool.labels = np.array(pool.labels)
-            pool.queries = np.array(pool.queries)
-            pool.prod_positions = np.array(pool.prod_positions)
+            for field in self.fields:
+                pool.__dict__[field] = np.array(pool.__dict__[field])
 
         return pools
 
     def train_test_split(self, test_size=0.3):
         features_train, features_test,\
         positions_train, positions_test,\
-        labels_train, labels_test,\
+        targets_train, targets_test,\
         proba_train, proba_test,\
         queries_train, queries_test,\
-        prod_positions_train, prod_positions_test = train_test_split(
-            self.features, self.positions, self.labels, self.probas, self.queries, self.prod_positions, test_size=test_size, shuffle=True
+        prod_positions_train, prod_positions_test,\
+        classification_labels_train, classification_labels_test = train_test_split(
+            self.features, self.positions, self.targets, self.probas,
+            self.queries, self.prod_positions, self.classification_labels,
+            test_size=test_size, shuffle=True
         )
 
         test_pool, train_pool = Pool(), Pool()
-        test_pool.set(features_test, positions_test, proba_test, labels_test, queries_test, prod_positions_test)
-        train_pool.set(features_train, positions_train, proba_train, labels_train, queries_train, prod_positions_train)
+        test_pool.set(features_test, positions_test, proba_test, targets_test, queries_test, prod_positions_test, classification_labels_test)
+        train_pool.set(features_train, positions_train, proba_train, targets_train, queries_train, prod_positions_train, classification_labels_train)
 
         return train_pool, test_pool
 
@@ -91,9 +84,9 @@ class Pool:
         POOLS_NUMBER = 3
         words = {word for query in self.queries for word in query}
         words_wins = {word: [] for word in words}
-        for label, query in zip(self.labels, self.queries):
+        for target, query in zip(self.targets, self.queries):
             for word in query:
-                words_wins[word].append(label)
+                words_wins[word].append(target)
         word_avarage_wins = {
             word: np.mean(words_wins[word])
             for word in words_wins
@@ -101,22 +94,14 @@ class Pool:
 
         pools = [Pool() for i in range(POOLS_NUMBER)]
 
-        for feature, position, proba, label, queries, prod_positions in zip(self.features, self.positions, self.probas, self.labels, self.queries, self.prod_positions):
-            average_win = np.mean([word_avarage_wins[word] for word in queries])
+        for i in range(len(self.features)):
+            average_win = np.mean([word_avarage_wins[word] for word in self.queries[i]])
             index = 0 if average_win < 0 else 1 if average_win == 0 else 2
-            pools[index].features.append(feature)
-            pools[index].positions.append(position)
-            pools[index].probas.append(proba)
-            pools[index].labels.append(label)
-            pools[index].queries.append(queries)
-            pools[index].prod_positions.append(prod_positions)
+            for field in self.fields:
+                pools[index].__dict__[field].append(self.__dict__[field][i])
 
         for pool in pools:
-            pool.features = np.array(pool.features)
-            pool.positions = np.array(pool.positions)
-            pool.probas = np.array(pool.probas)
-            pool.labels = np.array(pool.labels)
-            pool.queries = np.array(pool.queries)
-            pool.prod_positions = np.array(pool.prod_positions)
+            for field in self.fields:
+                pool.__dict__[field] = np.array(pool.__dict__[field])
 
         return pools

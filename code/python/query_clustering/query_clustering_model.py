@@ -16,7 +16,7 @@ class QueryClusteringModel:
 
         words_wins = {}
         for pool in train_pools:
-            for label, query in zip(pool.labels, pool.queries):
+            for label, query in zip(pool.targets, pool.queries):
                 for word in query:
                     if word not in words_wins:
                         words_wins[word] = [label]
@@ -29,7 +29,7 @@ class QueryClusteringModel:
 
         for pool, model in zip(train_pools, self.models):
             features_with_positions = np.concatenate((pool.features, np.reshape(pool.positions, (-1, 1))), axis=1)
-            model.fit(features_with_positions, pool.labels)
+            model.fit(features_with_positions, pool.targets)
 
     def predict(self, test_pool):
         result = []
