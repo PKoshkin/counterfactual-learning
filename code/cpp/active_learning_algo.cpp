@@ -43,8 +43,8 @@ CounterfacturalModel* PoolBasedActiveLearningAlgo::train(const Pool& train_pool)
     labeled_pool.reserve(current_max_labels);
 
     std::cout << "\nStart active learning train" << std::endl;
-
-    model->fit(labeled_pool);
+    if (!(strategy->is_model_free()))
+        model->fit(labeled_pool);
 
     while (labeled_pool.size() < current_max_labels) {
         std::list<std::pair<std::list<Object>::iterator, double>> batch;
@@ -71,8 +71,12 @@ CounterfacturalModel* PoolBasedActiveLearningAlgo::train(const Pool& train_pool)
             unlabeled_pool.erase(it.first);
         }
 
-        model->fit(labeled_pool);
+        if (!strategy->is_model_free())
+            model->fit(labeled_pool);
     }
+
+    if (strategy->is_model_free())
+        model->fit(labeled_pool);
 
     std::cout << "\nEnd active learning train" << std::endl;
 

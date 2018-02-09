@@ -15,7 +15,7 @@ void test_active_learning_algo(
         uint16_t iteration_number,
         uint16_t positions_to_print_number) {
     std::ofstream stream;
-    stream.open(file_name);
+    stream.open(file_name, std::ofstream::out | std::ofstream::app);
 
     stream << "Apply " << active_learning_algo->name() << "\n" << std::endl;
 
