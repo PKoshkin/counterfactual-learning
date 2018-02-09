@@ -16,12 +16,12 @@ int main() {
     Pool train_pool = pool_pair.first;
     Pool test_pool = pool_pair.second;
 
-    XGBoostModel base_model(10);
+    XGBoostModel base_model(100);
     PositionToFeaturesModel model(&base_model, train_pool.POSITIONS);
 
     PoolBasedUncertaintySamplingStrategy strategy;
-    PoolBasedActiveLearningAlgo active_learning_algo(&model, &strategy, 50000, 500, 51000);
-    test_active_learning_algo(&active_learning_algo, train_pool, test_pool, "al_test_results.txt", 1);
+    PoolBasedActiveLearningAlgo active_learning_algo(&model, &strategy, 5000, 400, 9000);
+    test_active_learning_algo(&active_learning_algo, train_pool, test_pool, "al_test_results.txt", 10);
 
     return 0;
 }

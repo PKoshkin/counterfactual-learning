@@ -40,8 +40,10 @@ std::pair<double, int> get_probability(const std::string& line, int search_start
     return {position, end_position + 2};
 }
 
-std::pair<std::vector<double>, int> get_vector(const std::string& line, std::string attribute,
-                                               int search_start_position = 0) {
+std::pair<std::vector<double>, int> get_vector(
+        const std::string& line,
+        std::string attribute,
+        int search_start_position = 0) {
     std::vector<double> result;
     int start_position = line.find(attribute) + attribute.size() + 4;
     if (attribute == "images_metric" && line.find("null", start_position) != std::string::npos)

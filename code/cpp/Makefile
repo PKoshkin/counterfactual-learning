@@ -5,7 +5,7 @@ CFLAGS=-std=c++11
 all: main
 
 main: metric model utils pool counterfactural_model active_learning_strategies active_learning_algo al_utils xgboost_model
-	g++ main.cpp counterfactural_model.o metric.o utils.o model.o active_learning_algo.o pool.o active_learning_strategies.o al_utils.o xgboost_model.o -o main $(CFLAGS) $(XGBFLAGS) $(XGBLIBS)
+	g++ al_main.cpp counterfactural_model.o metric.o utils.o model.o active_learning_algo.o pool.o active_learning_strategies.o al_utils.o xgboost_model.o -o main $(CFLAGS) $(XGBFLAGS) $(XGBLIBS)
 
 al_utils:
 	g++ -c al_utils.cpp -o al_utils.o $(CFLAGS)

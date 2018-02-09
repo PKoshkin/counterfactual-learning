@@ -13,7 +13,7 @@
 int main() {
     std::srand(std::time(0));
     char pool_path[100] = "../../pool.json";
-    Pool pool = get_pool(pool_path, 90000);
+    Pool pool = get_pool(pool_path);
     std::vector<int> positions_counter(pool.POSITIONS.size(), 0);
 
     for (int i = 0; i < pool.size(); ++i) {
@@ -34,7 +34,7 @@ int main() {
     }
     std::cout << "Total amount: " << sum << std::endl;
 
-    auto pool_pair = train_test_split(pool, 1.0 / 90);
+    auto pool_pair = train_test_split(pool, 0.75);
     Pool train_pool = pool_pair.first;
     Pool test_pool = pool_pair.second;
 
@@ -49,7 +49,7 @@ int main() {
     ElevenRegressionsModel model(pointers_vector);
     */
 
-    XGBoostModel base_model(10);
+    XGBoostModel base_model(100);
     // RidgeRegression base_model(0.0000005, 1, 16, 100, 100);
     PositionToFeaturesModel model(&base_model, train_pool.POSITIONS);
     model.fit(train_pool);
