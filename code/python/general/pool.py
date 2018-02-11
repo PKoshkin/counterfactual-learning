@@ -37,8 +37,9 @@ class Pool:
                     int(line['prod_pos'])
                     for line in data
                 ]
+
                 self.classification_labels = [
-                    (1 if (line['images_metric'][2] - line['images_metric'][1]) > 0 else 0)
+                    (1 if (line['images_metric'][2] - line['images_metric'][1]) < 0 else 2 if (line['images_metric'][2] - line['images_metric'][1]) == 0 else 3)
                     if line['images_metric'] is not None else 0
                     for line in data
                 ]
