@@ -11,7 +11,7 @@
 int main() {
     uint16_t test_results_sample_size = 30;
     uint16_t start_permutaion_ind = 0;
-    uint16_t permutations_num = 1;
+    uint16_t permutations_num = 7;
     uint16_t end_permutaiont_ind = start_permutaion_ind + permutations_num;
     uint16_t initial_size = 5000;
     uint16_t batch_size = 400;

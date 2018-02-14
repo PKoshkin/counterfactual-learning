@@ -94,13 +94,11 @@ std::vector<int> PositionToFeaturesModel::predict(const Pool& test_pool) const {
 
 std::vector<double> PositionToFeaturesModel::predict_proba(const Object& object) const {
     std::vector<double> result(positions.size());
-
     for (int i = 0; i < result.size(); ++i) {
         std::vector<double> features = object.factors;
-        features.push_back(static_cast<double>(object.position));
+        features.push_back(static_cast<double>(positions[i]));
         result[i] = model->predict(features);
     }
-
     softmax(result);
     return result;
 }

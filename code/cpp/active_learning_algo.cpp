@@ -36,11 +36,10 @@ CounterfacturalModel* PoolBasedActiveLearningAlgo::train(const Pool& train_pool,
         current_max_labels = train_pool.size();
 
     std::list<int> unlabeled_indexes;
-    Pool labeled_pool;
-
     for (int index = initial_size; index < permutation.size(); ++index)
         unlabeled_indexes.push_back(permutation[index]);
 
+    Pool labeled_pool;
     labeled_pool.assign(train_pool, permutation.begin(), permutation.begin() + initial_size);
     labeled_pool.reserve(current_max_labels);
 
@@ -52,7 +51,7 @@ CounterfacturalModel* PoolBasedActiveLearningAlgo::train(const Pool& train_pool,
 
     while (labeled_pool.size() < current_max_labels) {
         std::list<std::pair<std::list<int>::iterator, double>> batch;
-        uint16_t curr_batch_size = std::min(batch_size, uint16_t(max_labels - labeled_pool.size()));
+        uint16_t curr_batch_size = std::min(batch_size, uint16_t(current_max_labels - labeled_pool.size()));
         for (auto unlabeled_ind = unlabeled_indexes.begin(); unlabeled_ind != unlabeled_indexes.end(); ++unlabeled_ind) {
             double score = strategy->get_score(model, train_pool, *unlabeled_ind);
             bool suit = false;
@@ -101,7 +100,6 @@ std::string PoolBasedPassiveLearningAlgo::name() {
     result += std::to_string(max_labels) + " queries";
 
     return result;
-
 }
 
 

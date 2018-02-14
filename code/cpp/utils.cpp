@@ -119,8 +119,10 @@ std::vector<std::vector<int>> get_permutations(
 
 void softmax(std::vector<double>& array) {
     double exp_sum = 0;
+    double minimum = *std::min_element(array.begin(), array.end());
+
     for (auto& iter: array) {
-        iter = std::exp(iter);
+        iter = std::exp(iter - minimum);
         exp_sum += iter;
     }
 
