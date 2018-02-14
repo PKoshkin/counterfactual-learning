@@ -8,7 +8,10 @@ class PoolError(Exception):
 class Pool:
     def __init__(self, *args):
         self.POSITIONS = list(range(10)) + [100]
-        self.fields = ['features', 'positions', 'probas', 'targets', 'queries', 'prod_positions', 'classification_labels']
+        self.fields = [
+            'features', 'positions', 'probas', 'targets', 'queries', 'prod_positions',
+            'classification_labels', 'regression_features', 'regression_prediction'
+        ]
         if len(args) == 0:
             for field in self.fields:
                 self.__dict__[field] = []
@@ -19,30 +22,37 @@ class Pool:
                 with open(args[0]) as handler:
                     data = [json_from_string(line) for line in handler]
                 self.features = np.array([line['factors'][:1052] for line in data])
-                self.positions = np.array([
+                self.positions = np.clip([
                     int(line['images_metric'][0]) if line['images_metric'] is not None else 100
                     for line in data
-                ])
+                ], -1, 11)
                 self.probas = np.array([line['p'] for line in data])
                 self.targets = np.array([
                     (line['images_metric'][2] - line['images_metric'][1])
                     if line['images_metric'] is not None else 0
                     for line in data
                 ])
-                self.queries = [
+                self.queries = np.array([
                     list(map(int, line['query'].split(' ')))
                     for line in data
-                ]
-                self.prod_positions = [
+                ])
+                self.prod_positions = np.array([
                     int(line['prod_pos'])
                     for line in data
-                ]
-
-                self.classification_labels = [
-                    (1 if (line['images_metric'][2] - line['images_metric'][1]) < 0 else 2 if (line['images_metric'][2] - line['images_metric'][1]) == 0 else 3)
-                    if line['images_metric'] is not None else 0
+                ])
+                self.classification_labels = np.array([(
+                        1 if (line['images_metric'][2] - line['images_metric'][1]) < 0 else
+                        2 if (line['images_metric'][2] - line['images_metric'][1]) == 0 else
+                        3
+                    ) if line['images_metric'] is not None else 0
                     for line in data
-                ]
+                ])
+                positions_one_hot = np.array([
+                    [0 if position != current_position else 1 for position in self.POSITIONS]
+                    for current_position in self.positions
+                ])
+                self.regression_features = np.concatenate((self.features, positions_one_hot), axis=1)
+                self.regression_prediction = np.reshape(self.targets, (-1, 1))
 
     def set(self, *args):
         for field, value in zip(self.fields, args):
@@ -63,21 +73,16 @@ class Pool:
         return pools
 
     def train_test_split(self, test_size=0.3):
-        features_train, features_test,\
-        positions_train, positions_test,\
-        targets_train, targets_test,\
-        proba_train, proba_test,\
-        queries_train, queries_test,\
-        prod_positions_train, prod_positions_test,\
-        classification_labels_train, classification_labels_test = train_test_split(
-            self.features, self.positions, self.targets, self.probas,
-            self.queries, self.prod_positions, self.classification_labels,
-            test_size=test_size, shuffle=True
-        )
+        train_fields_dict = {}
+        test_fields_dict = {}
+        for field in self.fields:
+            train_fields_dict[field], test_fields_dict[field] = train_test_split(
+                self.__dict__[field], test_size=test_size, shuffle=True
+            )
 
         test_pool, train_pool = Pool(), Pool()
-        test_pool.set(features_test, positions_test, proba_test, targets_test, queries_test, prod_positions_test, classification_labels_test)
-        train_pool.set(features_train, positions_train, proba_train, targets_train, queries_train, prod_positions_train, classification_labels_train)
+        train_pool.set(*list(train_fields_dict.values()))
+        test_pool.set(*list(test_fields_dict.values()))
 
         return train_pool, test_pool
 
