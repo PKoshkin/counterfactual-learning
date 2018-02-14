@@ -10,12 +10,11 @@ XGBoostModel::XGBoostModel(uint16_t iteration_number, const BoosterParams& boost
 
 
 void XGBoostModel::fit(const Matrix& features, const std::vector<double>& scores) {
-    bool success = false;
     float* train_features;
     float* train_labels;
     DMatrixHandle train_data;
 
-    while (!success) {
+    while (true) {
         try {
             int rows = features.size();
             int cols = features[0].size();
@@ -49,6 +48,7 @@ void XGBoostModel::fit(const Matrix& features, const std::vector<double>& scores
             delete[] train_features;
             delete[] train_labels;
             XGDMatrixFree(train_data);
+            return;
         }
         catch (std::bad_alloc err) {
             try {
@@ -62,8 +62,6 @@ void XGBoostModel::fit(const Matrix& features, const std::vector<double>& scores
             }
             catch (std::exception _err) {}
         }
-
-        success = true;
     }
 }
 

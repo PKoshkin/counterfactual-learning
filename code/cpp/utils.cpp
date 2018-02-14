@@ -105,6 +105,18 @@ std::vector<int> get_permutation(int size) {
 }
 
 
+std::vector<std::vector<int>> get_permutations(
+        uint32_t permutations_number,
+        uint32_t permutation_size,
+        uint32_t random_seed) {
+    std::srand(random_seed);
+    std::vector<std::vector<int>> permutations(permutations_number);
+    for (auto& permutation: permutations)
+        permutation = get_permutation(permutation_size);
+    return permutations;
+}
+
+
 void softmax(std::vector<double>& array) {
     double exp_sum = 0;
     for (auto& iter: array) {

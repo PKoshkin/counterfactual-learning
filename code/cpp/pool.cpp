@@ -36,7 +36,7 @@ void Pool::assign(const Pool& pool, int begin, int end) {
 }
 
 
-void Pool::assign(const Pool& pool, std::vector<int>::iterator begin, std::vector<int>::iterator end) {
+void Pool::assign(const Pool& pool, std::vector<int>::const_iterator begin, std::vector<int>::const_iterator end) {
     resize(end - begin);
 
     for (auto it = begin; it != end; ++it)

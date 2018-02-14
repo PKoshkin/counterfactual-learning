@@ -9,7 +9,10 @@ PoolBasedActiveLearningAlgo::PoolBasedActiveLearningAlgo(
         uint16_t initial_size,
         uint16_t batch_size,
         uint16_t max_labels)
-    : model(model), strategy(strategy), batch_size(batch_size), max_labels(max_labels), initial_size(initial_size) {}
+        : strategy(strategy), batch_size(batch_size), max_labels(max_labels) {
+    this->model = model;
+    this->initial_size = initial_size;
+}
 
 
 std::string PoolBasedActiveLearningAlgo::name() {
@@ -27,35 +30,36 @@ std::string PoolBasedActiveLearningAlgo::name() {
 }
 
 
-CounterfacturalModel* PoolBasedActiveLearningAlgo::train(const Pool& train_pool) {
+CounterfacturalModel* PoolBasedActiveLearningAlgo::train(const Pool& train_pool, const std::vector<int>& permutation) {
     uint16_t current_max_labels = max_labels;
     if (max_labels == 0 || max_labels > train_pool.size())
         current_max_labels = train_pool.size();
 
-    std::list<Object> unlabeled_pool;
+    std::list<int> unlabeled_indexes;
     Pool labeled_pool;
 
-    std::vector<int> permutation = get_permutation(train_pool.size());
     for (int index = initial_size; index < permutation.size(); ++index)
-        unlabeled_pool.push_back(train_pool.get(permutation[index]));
+        unlabeled_indexes.push_back(permutation[index]);
 
     labeled_pool.assign(train_pool, permutation.begin(), permutation.begin() + initial_size);
     labeled_pool.reserve(current_max_labels);
 
-    std::cout << "\nStart active learning train" << std::endl;
     if (!(strategy->is_model_free()))
         model->fit(labeled_pool);
 
+    strategy->initialize(train_pool, permutation, initial_size);
+    std::cout << "\nStart active learning train" << std::endl;
+
     while (labeled_pool.size() < current_max_labels) {
-        std::list<std::pair<std::list<Object>::iterator, double>> batch;
+        std::list<std::pair<std::list<int>::iterator, double>> batch;
         uint16_t curr_batch_size = std::min(batch_size, uint16_t(max_labels - labeled_pool.size()));
-        for (auto unlabeled_obj = unlabeled_pool.begin(); unlabeled_obj != unlabeled_pool.end(); ++unlabeled_obj) {
-            double score = strategy->get_score(model, unlabeled_pool, labeled_pool, *unlabeled_obj);
+        for (auto unlabeled_ind = unlabeled_indexes.begin(); unlabeled_ind != unlabeled_indexes.end(); ++unlabeled_ind) {
+            double score = strategy->get_score(model, train_pool, *unlabeled_ind);
             bool suit = false;
 
             for (auto it = batch.begin(); it != batch.end(); ++it)
                 if (it->second < score) {
-                    batch.insert(it, {unlabeled_obj, score});
+                    batch.insert(it, {unlabeled_ind, score});
                     suit = true;
                     break;
                 }
@@ -63,13 +67,19 @@ CounterfacturalModel* PoolBasedActiveLearningAlgo::train(const Pool& train_pool)
             if (suit && batch.size() > curr_batch_size)
                 batch.pop_back();
             if (!suit && batch.size() < curr_batch_size)
-                batch.push_back({unlabeled_obj, score});
+                batch.push_back({unlabeled_ind, score});
         }
 
+        std::vector<int> batch_ind;
+        batch_ind.reserve(batch.size());
         for (auto it: batch) {
-            labeled_pool.push_back(*(it.first));
-            unlabeled_pool.erase(it.first);
+            batch_ind.push_back(*(it.first));
+            labeled_pool.push_back(train_pool.get(*(it.first)));
+            unlabeled_indexes.erase(it.first);
         }
+        strategy->update(train_pool, batch_ind, unlabeled_indexes);
+
+        std::cout << "\nBatch added" << std::endl;
 
         if (!strategy->is_model_free())
             model->fit(labeled_pool);
@@ -80,5 +90,31 @@ CounterfacturalModel* PoolBasedActiveLearningAlgo::train(const Pool& train_pool)
 
     std::cout << "\nEnd active learning train" << std::endl;
 
+    return model;
+}
+
+
+std::string PoolBasedPassiveLearningAlgo::name() {
+     std::string result = "";
+
+    result += "pool-based passive learning algorithm choosing ";
+    result += std::to_string(max_labels) + " queries";
+
+    return result;
+
+}
+
+
+PoolBasedPassiveLearningAlgo::PoolBasedPassiveLearningAlgo(
+        CounterfacturalModel* model,
+        uint16_t max_labels) : max_labels(max_labels) {
+    this->model = model;
+}
+
+
+CounterfacturalModel* PoolBasedPassiveLearningAlgo::train(const Pool& train_pool, const std::vector<int>& permutation) {
+    Pool actual_train_pool;
+    actual_train_pool.assign(train_pool, permutation.begin(), permutation.begin() + max_labels);
+    model->fit(actual_train_pool);
     return model;
 }

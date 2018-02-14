@@ -28,7 +28,7 @@ public:
     void resize(int size);
     int size() const;
     void assign(const Pool& pool, int begin, int end = -1);
-    void assign(const Pool& pool, std::vector<int>::iterator begin, std::vector<int>::iterator end);
+    void assign(const Pool& pool, std::vector<int>::const_iterator begin, std::vector<int>::const_iterator end);
     std::vector<Pool> split_by_positions() const;
     void push_back(const Object& obj);
     void erase(int index);

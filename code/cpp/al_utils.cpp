@@ -11,10 +11,11 @@ void test_active_learning_algo(
         ActiveLearningAlgo* active_learning_algo,
         const Pool& train_pool,
         const Pool& test_pool,
+        const std::vector<std::vector<int>>& permutations,
         std::string file_name,
-        uint16_t iteration_number,
         uint16_t positions_to_print_number) {
     std::ofstream stream;
+    uint16_t iteration_number = permutations.size();
     stream.open(file_name, std::ofstream::out | std::ofstream::app);
 
     stream << "Apply " << active_learning_algo->name() << "\n" << std::endl;
@@ -22,7 +23,7 @@ void test_active_learning_algo(
     std::vector<double> result_metrics(iteration_number);
 
     for (int j = 0; j < iteration_number; ++j) {
-        CounterfacturalModel* model = active_learning_algo->train(train_pool);
+        CounterfacturalModel* model = active_learning_algo->train(train_pool, permutations[j]);
 
         std::vector<int> predicted_positions = model->predict(test_pool);
         for (int i = 0; i < positions_to_print_number; ++i)
@@ -31,7 +32,7 @@ void test_active_learning_algo(
         result_metrics[j] = get_metric(test_pool, predicted_positions);
         stream << "Result metric: " << result_metrics[j] << std::endl;
     }
-
+    /*
     if (iteration_number > 1) {
         double mean = 0, variance = 0;
 
@@ -45,7 +46,8 @@ void test_active_learning_algo(
 
         stream << "\nMean: " << mean << " std: " << std::sqrt(variance);
     }
+    */
 
-    stream << "\n=============================\n" << std::endl;
+    // stream << "\n=============================\n" << std::endl;
     stream.close();
 }

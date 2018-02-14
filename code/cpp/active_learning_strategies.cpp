@@ -25,12 +25,25 @@ bool PoolBasedUncertaintySamplingStrategy::is_model_free() {
 }
 
 
+void PoolBasedUncertaintySamplingStrategy::initialize(
+        const Pool& train_pool,
+        const std::vector<int>& indexes_permutation,
+        int labeled_pool_size) {
+}
+
+
+void PoolBasedUncertaintySamplingStrategy::update(
+        const Pool& train_pool,
+        const std::vector<int>& batch,
+        const std::list<int>& unlabeled_indexes) {
+}
+
+
 double PoolBasedUncertaintySamplingStrategy::get_score(
         CounterfacturalModel* current_model,
-        const std::list<Object>& unlabeled_pool,
-        const Pool& labeled_pool,
-        const Object& obj) {
-    std::vector<double> probas = current_model->predict_proba(obj);
+        const Pool& train_pool,
+        int index) {
+    std::vector<double> probas = current_model->predict_proba(train_pool.get(index));
 
     double gini_score = 1;
     for (auto proba: probas)
@@ -50,16 +63,50 @@ bool PoolBasedDiversity::is_model_free() {
 }
 
 
+PoolBasedDiversity::PoolBasedDiversity(double seen_labeled_objects_share)
+    : seen_labeled_objects_share(seen_labeled_objects_share) {}
+
+
+void PoolBasedDiversity::initialize(
+        const Pool& train_pool,
+        const std::vector<int>& indexes_permutation,
+        int labeled_pool_size) {
+    current_scores.resize(train_pool.size(), -2);
+
+    for (int unlabeled_permutation_ind = labeled_pool_size;
+            unlabeled_permutation_ind < indexes_permutation.size();
+            ++unlabeled_permutation_ind) {
+
+        int unlabeled_ind = indexes_permutation[unlabeled_permutation_ind];
+
+        for (int labeled_ind = 0; labeled_ind < labeled_pool_size; ++labeled_ind) {
+            double score = cosin_similarity(
+                train_pool.factors[unlabeled_ind],
+                train_pool.factors[indexes_permutation[labeled_ind]]
+            );
+            if (score > current_scores[unlabeled_ind])
+                current_scores[unlabeled_ind] = score;
+        }
+    }
+}
+
+
+void PoolBasedDiversity::update(
+        const Pool& train_pool,
+        const std::vector<int>& batch,
+        const std::list<int>& unlabeled_indexes) {
+    for (auto unlabeled_ind: unlabeled_indexes)
+        for (auto new_labeled_ind: batch) {
+            double score = cosin_similarity(train_pool.factors[unlabeled_ind], train_pool.factors[new_labeled_ind]);
+            if (score > current_scores[unlabeled_ind])
+                current_scores[unlabeled_ind] = score;
+        }
+}
+
+
 double PoolBasedDiversity::get_score(
         CounterfacturalModel* current_model,
-        const std::list<Object>& unlabeled_pool,
-        const Pool& labeled_pool,
-        const Object& obj) {
-    double max = -2;
-    for (int i = 0; i < labeled_pool.size(); ++i) {
-        double similarity = cosin_similarity(obj.factors, labeled_pool.factors[i]);
-        if (similarity > max)
-            max = similarity;
-    }
-    return max;
+        const Pool& train_pool,
+        int index) {
+    return -current_scores[index];
 }
