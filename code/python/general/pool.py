@@ -7,7 +7,8 @@ class PoolError(Exception):
 
 class Pool:
     def __init__(self, *args):
-        self.POSITIONS = list(range(10)) + [100]
+        self.NONE_POSITION = 11
+        self.POSITIONS = list(range(1, self.NONE_POSITION))
         self.fields = [
             'features', 'positions', 'probas', 'targets', 'queries', 'prod_positions',
             'classification_labels', 'regression_features', 'regression_prediction'
@@ -25,7 +26,7 @@ class Pool:
                 self.positions = np.clip([
                     int(line['images_metric'][0]) if line['images_metric'] is not None else 100
                     for line in data
-                ], -1, 11)
+                ], -1, self.NONE_POSITION)
                 self.probas = np.array([line['p'] for line in data])
                 self.targets = np.array([
                     (line['images_metric'][2] - line['images_metric'][1])
@@ -61,10 +62,10 @@ class Pool:
     def split_by_position(self):
         pools = [Pool() for position in self.POSITIONS]
 
-        for i in range(len(self.features)):
-            index = self.position[i] if self.position[i] in list(range(10)) else 10
+        for i, position in enumerate(self.positions):
             for field in self.fields:
-                pools[index].__dict__[field].append(self.__dict__[field][i])
+                if position != self.NONE_POSITION:
+                    pools[self.positions[i] - 1].__dict__[field].append(self.__dict__[field][i])
 
         for pool in pools:
             for field in self.fields:
