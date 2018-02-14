@@ -17,8 +17,7 @@ class OneRegressionConvModel:
 
         conv = Conv1D(
             filters=8,
-            kernel_size=100,
-            activation='relu'
+            kernel_size=100
         )
         dense = Dense(1, activation='relu')
 
@@ -27,7 +26,7 @@ class OneRegressionConvModel:
         self.loss = (
             tf.reduce_mean((self.input_prediction - self.output_prediction) ** 2)
         )
-        self.optimizer = tf.train.AdamOptimizer().minimize(self.loss)#, var_list=(conv.weights + dense.weights))
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=0.0001).minimize(self.loss)#, var_list=(conv.weights + dense.weights))
 
         self.sess.run(tf.global_variables_initializer())
 
