@@ -1,4 +1,7 @@
 import tensorflow as tf
+from keras.models import Sequential
+from keras.layers import Conv1D, Flatten, Dense, Activation
+from keras import backend as Keras
 import numpy as np
 
 class OnePositionLinearModel:
@@ -16,7 +19,6 @@ class OnePositionLinearModel:
         self.output_prediction = tf.matmul(self.input_features, self.matrix) + self.bias
         self.loss = (
             tf.reduce_mean((self.input_prediction - self.output_prediction) ** 2)# +
-#            tf.reduce_mean(self.matrix ** 2) + tf.reduce_mean(self.bias ** 2)
         )
         self.optimizer = tf.train.AdamOptimizer().minimize(
             self.loss, var_list=[self.matrix, self.bias]
