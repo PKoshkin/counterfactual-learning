@@ -25,6 +25,7 @@ std::string PoolBasedActiveLearningAlgo::name() {
         result += " and whole pool";
     else
         result += " and " + std::to_string(max_labels) + " queries max";
+    result += " with batch size " + std::to_string(batch_size);
 
     return result;
 }
