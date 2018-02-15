@@ -111,7 +111,9 @@ PoolBasedPassiveLearningAlgo::PoolBasedPassiveLearningAlgo(
 }
 
 
-CounterfacturalModel* PoolBasedPassiveLearningAlgo::train(const Pool& train_pool, const std::vector<int>& permutation) {
+CounterfacturalModel* PoolBasedPassiveLearningAlgo::train(
+        const Pool& train_pool,
+        const std::vector<int>& permutation) {
     Pool actual_train_pool;
     actual_train_pool.assign(train_pool, permutation.begin(), permutation.begin() + max_labels);
     model->fit(actual_train_pool);

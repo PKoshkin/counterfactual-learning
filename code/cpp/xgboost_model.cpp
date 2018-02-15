@@ -10,8 +10,8 @@ XGBoostModel::XGBoostModel(uint16_t iteration_number, const BoosterParams& boost
 
 
 void XGBoostModel::fit(const Matrix& features, const std::vector<double>& scores) {
-    float* train_features;
-    float* train_labels;
+    std::shared_ptr<float> train_features;
+    std::shared_ptr<float> train_labels;
     DMatrixHandle train_data;
 
     while (true) {
@@ -19,17 +19,17 @@ void XGBoostModel::fit(const Matrix& features, const std::vector<double>& scores
             int rows = features.size();
             int cols = features[0].size();
 
-            train_features = new float[rows * cols];
-            train_labels = new float[rows];
+            train_features = std::shared_ptr<float>(new float[rows * cols]);
+            train_labels = std::shared_ptr<float>(new float[rows]);
 
             for (int row = 0; row < rows; ++row) {
                 for (int col = 0; col < cols; ++col)
-                    train_features[row * cols + col] = static_cast<float>(features[row][col]);
-                train_labels[row] = static_cast<float>(scores[row]);
+                    train_features.get()[row * cols + col] = static_cast<float>(features[row][col]);
+                train_labels.get()[row] = static_cast<float>(scores[row]);
             }
 
-            XGDMatrixCreateFromMat((float *) train_features, rows, cols, -1, &train_data);
-            XGDMatrixSetFloatInfo(train_data, "label", train_labels, rows);
+            XGDMatrixCreateFromMat(train_features.get(), rows, cols, -1, &train_data);
+            XGDMatrixSetFloatInfo(train_data, "label", train_labels.get(), rows);
 
             if (!booster)
                 XGBoosterFree(booster);
@@ -39,21 +39,17 @@ void XGBoostModel::fit(const Matrix& features, const std::vector<double>& scores
             XGBoosterSetParam(booster, "base_score", "0");
             XGBoosterSetParam(booster, "silent", "1");
 
-            for (auto param: booster_params)
+            for (const auto& param: booster_params)
                 XGBoosterSetParam(booster, param.first.c_str(), param.second.c_str());
 
             for (int iteration = 0; iteration < iteration_number; ++iteration)
                 XGBoosterUpdateOneIter(booster, iteration, train_data);
 
-            delete[] train_features;
-            delete[] train_labels;
             XGDMatrixFree(train_data);
             return;
         }
         catch (std::bad_alloc err) {
             try {
-                delete[] train_features;
-                delete[] train_labels;
                 XGDMatrixFree(train_data);
                 if (!booster) {
                     XGBoosterFree(booster);
