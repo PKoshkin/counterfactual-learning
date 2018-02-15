@@ -79,7 +79,7 @@ void PoolBasedDiversity::initialize(
 
         int unlabeled_ind = indexes_permutation[unlabeled_permutation_ind];
 
-        for (int labeled_ind = 0; labeled_ind < labeled_pool_size; ++labeled_ind) {
+        for (int labeled_ind = 0; labeled_ind < labeled_pool_size * seen_labeled_objects_share; ++labeled_ind) {
             double score = cosin_similarity(
                 train_pool.factors[unlabeled_ind],
                 train_pool.factors[indexes_permutation[labeled_ind]]
@@ -95,9 +95,9 @@ void PoolBasedDiversity::update(
         const Pool& train_pool,
         const std::vector<int>& batch,
         const std::list<int>& unlabeled_indexes) {
-    for (auto unlabeled_ind: unlabeled_indexes)
-        for (auto new_labeled_ind: batch) {
-            double score = cosin_similarity(train_pool.factors[unlabeled_ind], train_pool.factors[new_labeled_ind]);
+    for (int i = 0; i < batch.size() * seen_labeled_objects_share; ++i)
+        for (auto unlabeled_ind: unlabeled_indexes) {
+            double score = cosin_similarity(train_pool.factors[unlabeled_ind], train_pool.factors[batch[i]]);
             if (score > current_scores[unlabeled_ind])
                 current_scores[unlabeled_ind] = score;
         }
