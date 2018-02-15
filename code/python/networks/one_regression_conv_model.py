@@ -11,11 +11,21 @@ class OneRegressionConvModel:
         self.POSITIONS = list(range(1, self.NONE_POSITION))
 
         self.sequential_model = Sequential([
-            Conv1D(8, 100, input_shape=(self.num_features, 1)),
-            Activation('relu'),
+            Conv1D(
+                8, 5, activation='relu',
+                use_bias=True,
+                input_shape=(self.num_features, 1)
+            ),
+            Conv1D(
+                16, 5, activation='relu',
+                use_bias=True
+            ),
+            Conv1D(
+                32, 5, activation='relu',
+                use_bias=True
+            ),
             Flatten(),
             Dense(512),
-            Activation('relu'),
             Dense(1)
         ])
         self.sequential_model.compile(optimizer='adam', loss='mse')
@@ -24,7 +34,7 @@ class OneRegressionConvModel:
         return np.reshape(features, (len(features), self.num_features, 1))
 
     def teach(self, train_features, train_prediction,
-              verbose=True, epochs=5, batch_size=32):
+              verbose=True, epochs=1, batch_size=32):
         self.sequential_model.fit(
             self.reshape_features(train_features), train_prediction,
             epochs=epochs, batch_size=batch_size
