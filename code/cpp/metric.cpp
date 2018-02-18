@@ -13,3 +13,12 @@ double get_metric(const Pool& test_pool, const std::vector<int>& predicted_posit
         }
     return result_metric / test_pool.size();
 }
+
+
+double accuracy(const std::vector<double>& answers, const std::vector<int>& predictions, double eps) {
+    int right_cnt = 0;
+    for (int i = 0; i < answers.size(); ++i)
+        if (answers[i] - eps < predictions[i] && predictions[i] < answers[i] + eps)
+            right_cnt++;
+    return static_cast<double>(right_cnt) / answers.size();
+}

@@ -73,6 +73,7 @@ CounterfacturalModel* PoolBasedActiveLearningAlgo::train(const Pool& train_pool,
         std::vector<int> batch_ind;
         batch_ind.reserve(batch.size());
         for (auto it: batch) {
+            std::cout << it.second << std::endl;
             batch_ind.push_back(*(it.first));
             labeled_pool.push_back(train_pool.get(*(it.first)));
             unlabeled_indexes.erase(it.first);

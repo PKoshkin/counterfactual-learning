@@ -27,8 +27,8 @@ void test_active_learning_algo(
         result_metrics.resize(permutations_num);
 
     uint16_t end_permutaiont_ind = std::min(
-            start_permutaion_ind + permutations_num,
-            static_cast<int>(permutations.size())
+        start_permutaion_ind + permutations_num,
+        static_cast<int>(permutations.size())
     );
     for (int j = start_permutaion_ind; j < end_permutaiont_ind; ++j) {
         CounterfacturalModel* model = active_learning_algo->train(train_pool, permutations[j]);

@@ -1,5 +1,7 @@
 #include "utils.h"
 
+#include <fstream>
+#include <string>
 #include <cmath>
 #include <algorithm>
 #include <utility>
@@ -14,16 +16,52 @@ Object::Object(int position, double metric, double proba, const std::vector<doub
     : position(position), metric(metric), proba(proba), factors(factors) {}
 
 
-std::pair<Pool, Pool> train_test_split(const Pool& pool, double train_share) {
-    int waterline = int(pool.factors.size() * train_share);
+std::pair<Pool, Pool> train_test_split(const Pool& pool, double train_share, uint32_t random_seed) {
+    int waterline = int(pool.size() * train_share);
     Pool train;
     Pool test;
 
-    train.assign(pool, waterline);
+    if (random_seed == -1) {
+        train.assign(pool, waterline);
+        test.assign(pool, waterline, pool.size());
+    } else {
+        std::srand(random_seed);
+        std::vector<int> permutation = get_permutation(pool.size());
 
-    test.assign(pool, waterline, pool.size());
+        train.assign(pool, permutation.begin(), permutation.begin() + waterline);
+        test.assign(pool, permutation.begin() + waterline, permutation.end());
+    }
+
     return {train, test};
 }
+
+
+Pool get_test_classification_pool(std::string file_name, int start_size) {
+    std::ifstream infile(file_name);
+    std::string line;
+    Pool result;
+    result.reserve(start_size);
+
+    while (std::getline(infile, line)) {
+        std::vector<double> factors(6);
+        for (int i = 0; i < 3; ++i) {
+            factors[2 * i] = static_cast<double>(line[4 * i] - 'a');
+            factors[2 * i + 1] = static_cast<double>(line[4 * i + 2] - '0');
+        }
+
+        double answer;
+        for (int index = 0; index < KRKOPT_ANSWERS.size(); ++index)
+            if (KRKOPT_ANSWERS[index] == line.substr(12)) {
+                answer = index;
+                break;
+            }
+
+        result.push_back(Object(0, answer, 1, factors));
+    }
+
+    return result;
+}
+
 
 std::pair<int, int> get_position(const std::string& line, int search_start_position = 0) {
     int pos_position = line.find("rnd_pos", search_start_position) + strlen("rnd_pos") + 3;

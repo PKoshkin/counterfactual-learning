@@ -82,6 +82,30 @@ double XGBoostModel::predict(const std::vector<double>& features) const {
 }
 
 
+std::vector<double> XGBoostModel::predict_proba(const std::vector<double>& features) const {
+    int rows = 1;
+    int cols = features.size();
+    float test_features[rows][cols];
+
+    for (int col = 0; col < cols; ++col)
+        test_features[0][col] = static_cast<float>(features[col]);
+
+    DMatrixHandle test_data;
+    XGDMatrixCreateFromMat((float *) test_features, rows, cols, -1, &test_data);
+
+    bst_ulong out_len;
+    const float * prediction;
+    XGBoosterPredict(booster, test_data, 0, 0, &out_len, &prediction);
+
+    XGDMatrixFree(test_data);
+
+    std::vector<double> result(out_len);
+    for (int i = 0; i < out_len; ++i)
+        result[i] = prediction[i];
+    return result;
+}
+
+
 XGBoostModel::~XGBoostModel() {
     XGBoosterFree(booster);
 }
