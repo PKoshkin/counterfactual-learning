@@ -54,7 +54,7 @@ double PoolBasedUncertaintySamplingStrategy::get_score(
 
 
 std::string PoolBasedDiversity::name() {
-    return "diversity";
+    return "diversity with " + std::to_string(seen_labeled_objects_share) + " share";
 }
 
 

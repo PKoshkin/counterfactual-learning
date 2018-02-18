@@ -52,10 +52,10 @@ int main(int argc, char* argv[]) {
 
     BasePoolBasedActiveLearningStrategy* strategy;
     PoolBasedUncertaintySamplingStrategy US_strategy;
-    PoolBasedDiversity diversity_strategy(0.05);
+    PoolBasedDiversity diversity_strategy(0.2);
     if (!strcmp(argv[1], "US"))
         strategy = &US_strategy;
-    else
+    if (!strcmp(argv[1], "diversity"))
         strategy = &diversity_strategy;
 
     PoolBasedActiveLearningAlgo active_learning_algo(&model, strategy, initial_size, batch_size, max_labels);

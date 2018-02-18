@@ -11,7 +11,6 @@
 
 
 int main() {
-    std::srand(std::time(0));
     char pool_path[100] = "../../pool.json";
     Pool pool = get_pool(pool_path);
     std::vector<int> positions_counter(pool.POSITIONS.size(), 0);
