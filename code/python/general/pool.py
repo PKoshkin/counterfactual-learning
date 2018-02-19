@@ -2,12 +2,15 @@ import numpy as np
 from json import loads as json_from_string
 from sklearn.model_selection import train_test_split
 
+
 class PoolError(Exception):
     pass
+
 
 class Pool:
     def __init__(self, *args):
         self.NONE_POSITION = 11
+        self.NUM_FEATURES = 1052
         self.POSITIONS = list(range(1, self.NONE_POSITION))
         self.fields = [
             'features', 'positions', 'probas', 'targets', 'queries', 'prod_positions',
@@ -22,9 +25,9 @@ class Pool:
             else:
                 with open(args[0]) as handler:
                     data = [json_from_string(line) for line in handler]
-                self.features = np.array([line['factors'][:1052] for line in data])
+                self.features = np.array([line['factors'][:self.NUM_FEATURES] for line in data])
                 self.positions = np.clip([
-                    int(line['images_metric'][0]) if line['images_metric'] is not None else 100
+                    int(line['images_metric'][0]) if line['images_metric'] is not None else self.NONE_POSITION
                     for line in data
                 ], -1, self.NONE_POSITION)
                 self.probas = np.array([line['p'] for line in data])
@@ -42,9 +45,9 @@ class Pool:
                     for line in data
                 ])
                 self.classification_labels = np.array([(
-                        1 if (line['images_metric'][2] - line['images_metric'][1]) < 0 else
-                        2 if (line['images_metric'][2] - line['images_metric'][1]) == 0 else
-                        3
+                        0 if (line['images_metric'][2] - line['images_metric'][1]) == 0 else
+                        1 if (line['images_metric'][2] - line['images_metric'][1]) > 0 else
+                        2
                     ) if line['images_metric'] is not None else 0
                     for line in data
                 ])
@@ -54,6 +57,9 @@ class Pool:
                 ])
                 self.regression_features = np.concatenate((self.features, positions_one_hot), axis=1)
                 self.regression_prediction = np.reshape(self.targets, (-1, 1))
+
+    def log_features(self):
+        self.features = np.log(1 + np.absolute(self.features))
 
     def set(self, *args):
         for field, value in zip(self.fields, args):
