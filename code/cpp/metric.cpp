@@ -15,10 +15,10 @@ double get_metric(const Pool& test_pool, const std::vector<int>& predicted_posit
 }
 
 
-double accuracy(const std::vector<double>& answers, const std::vector<int>& predictions, double eps) {
+double accuracy(const Pool& test_pool, const std::vector<int>& predictions) {
     int right_cnt = 0;
-    for (int i = 0; i < answers.size(); ++i)
-        if (answers[i] - eps < predictions[i] && predictions[i] < answers[i] + eps)
+    for (int i = 0; i < test_pool.size(); ++i)
+        if (test_pool.metrics[i] - 0.01 < predictions[i] && predictions[i] < test_pool.metrics[i] + 0.01)
             right_cnt++;
-    return static_cast<double>(right_cnt) / answers.size();
+    return static_cast<double>(right_cnt) / test_pool.size();
 }

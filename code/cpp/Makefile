@@ -2,13 +2,13 @@ XGBFLAGS=-I xgboost/include -I xgboost/rabit/include -fopenmp
 XGBLIBS=xgboost/lib/libxgboost.a xgboost/rabit/lib/librabit.a xgboost/dmlc-core/libdmlc.a
 CFLAGS=-std=c++11
 
-all: test_main
+all: al_main
 
 test_main: metric model utils pool counterfactural_model active_learning_strategies active_learning_algo al_utils xgboost_model test_model
 	g++ test_main.cpp counterfactural_model.o metric.o utils.o model.o active_learning_algo.o pool.o active_learning_strategies.o al_utils.o xgboost_model.o test_model.o -o test $(CFLAGS) $(XGBFLAGS) $(XGBLIBS)
 
 al_main: metric model utils pool counterfactural_model active_learning_strategies active_learning_algo al_utils xgboost_model
-	g++ al_main.cpp counterfactural_model.o metric.o utils.o model.o active_learning_algo.o pool.o active_learning_strategies.o al_utils.o xgboost_model.o -o main $(CFLAGS) $(XGBFLAGS) $(XGBLIBS)
+	g++ al_main.cpp counterfactural_model.o metric.o utils.o model.o active_learning_algo.o pool.o active_learning_strategies.o al_utils.o xgboost_model.o -o al_main $(CFLAGS) $(XGBFLAGS) $(XGBLIBS)
 
 main: metric model utils pool counterfactural_model xgboost_model
 	g++ main.cpp counterfactural_model.o metric.o utils.o model.o pool.o xgboost_model.o -o main $(CFLAGS) $(XGBFLAGS) $(XGBLIBS)

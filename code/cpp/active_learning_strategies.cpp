@@ -1,6 +1,7 @@
 #include "active_learning_strategies.h"
 
 #include <cmath>
+#include <algorithm>
 
 
 double cosin_similarity(const std::vector<double>& a, const std::vector<double>& b) {
@@ -45,11 +46,7 @@ double PoolBasedUncertaintySamplingStrategy::get_score(
         int index) {
     std::vector<double> probas = current_model->predict_proba(train_pool.get(index));
 
-    double gini_score = 1;
-    for (auto proba: probas)
-        gini_score -= proba * proba;
-
-    return gini_score;
+    return 1 - *std::max_element(probas.begin(), probas.end());
 }
 
 

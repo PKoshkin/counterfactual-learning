@@ -2,6 +2,8 @@
 #include <ctime>
 #include <cstdlib>
 #include <cstring>
+#include <utility>
+#include <memory>
 
 #include "metric.h"
 #include "xgboost_model.h"
@@ -34,6 +36,7 @@ int main(int argc, char* argv[]) {
     uint16_t end_permutaiont_ind = start_permutaion_ind + permutations_num;
     uint16_t initial_size = 5000;
     uint16_t max_labels = 9000;
+    std::string log_filename = "al_test_results.txt";
 
     char pool_path[100] = "../../pool.json";
     Pool pool = get_pool(pool_path, 90000);
@@ -50,26 +53,54 @@ int main(int argc, char* argv[]) {
     XGBoostModel base_model(50);
     PositionToFeaturesModel model(&base_model, train_pool.POSITIONS);
 
-    BasePoolBasedActiveLearningStrategy* strategy;
-    PoolBasedUncertaintySamplingStrategy US_strategy;
-    PoolBasedDiversity diversity_strategy(0.2);
-    if (!strcmp(argv[1], "US"))
-        strategy = &US_strategy;
-    if (!strcmp(argv[1], "diversity"))
-        strategy = &diversity_strategy;
+    std::unique_ptr<ActiveLearningAlgo> active_learning_algo;
+    std::unique_ptr<BasePoolBasedActiveLearningStrategy> strategy;
 
-    PoolBasedActiveLearningAlgo active_learning_algo(&model, strategy, initial_size, batch_size, max_labels);
-    // PoolBasedPassiveLearningAlgo active_learning_algo(&model, max_labels);
+    if (!strcmp(argv[1], "random")) {
+        active_learning_algo = std::move(std::unique_ptr<ActiveLearningAlgo>(
+            new PoolBasedPassiveLearningAlgo(
+                &model,
+                initial_size,
+                batch_size,
+                max_labels,
+                log_filename,
+                &get_metric
+            )
+        ));
+    } else {
+        if (!strcmp(argv[1], "US")) {
+            strategy = std::move(std::unique_ptr<BasePoolBasedActiveLearningStrategy>(
+                new PoolBasedUncertaintySamplingStrategy
+            ));
+        }
+        else if (!strcmp(argv[1], "diversity")) {
+            strategy = std::move(std::unique_ptr<BasePoolBasedActiveLearningStrategy>(
+                new PoolBasedDiversity(0.2)
+            ));
+        }
+        else
+            throw 1;
+
+        active_learning_algo = std::move(std::unique_ptr<ActiveLearningAlgo>(
+            new PoolBasedActiveLearningAlgo(
+                &model,
+                strategy.get(),
+                initial_size,
+                batch_size,
+                max_labels,
+                log_filename,
+                &get_metric
+            )
+        ));
+    }
 
     test_active_learning_algo(
-        &active_learning_algo,
+        active_learning_algo.get(),
         train_pool,
         test_pool,
         permutations,
         start_permutaion_ind,
-        permutations_num,
-        "al_test_results.txt",
-        0
+        permutations_num
     );
 
     return 0;

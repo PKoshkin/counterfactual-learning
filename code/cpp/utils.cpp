@@ -50,12 +50,17 @@ Pool get_test_classification_pool(std::string file_name, int start_size) {
         }
 
         double answer;
+        if (line.substr(12) == KRKOPT_ANSWERS[15])
+            answer = 0;
+        else
+            answer = 1;
+        /*
         for (int index = 0; index < KRKOPT_ANSWERS.size(); ++index)
             if (KRKOPT_ANSWERS[index] == line.substr(12)) {
                 answer = index;
                 break;
             }
-
+        */
         result.push_back(Object(0, answer, 1, factors));
     }
 

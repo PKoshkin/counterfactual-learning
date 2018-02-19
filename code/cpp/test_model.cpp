@@ -1,5 +1,6 @@
 #include "test_model.h"
 #include "utils.h"
+#include "metric.h"
 
 #include <string>
 
