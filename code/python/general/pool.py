@@ -9,12 +9,12 @@ class PoolError(Exception):
 
 class Pool:
     def __init__(self, *args):
-        self.NONE_POSITION = 11
+        self.NONE_POSITION = 10
         self.NUM_FEATURES = 1052
-        self.POSITIONS = list(range(1, self.NONE_POSITION))
+        self.POSITIONS = np.arange(self.NONE_POSITION)
         self.fields = [
             'features', 'positions', 'probas', 'targets', 'queries', 'prod_positions',
-            'classification_labels', 'regression_features', 'regression_prediction'
+            'classification_labels', 'regression_features', 'regression_prediction', 'positions_variants'
         ]
         if len(args) == 0:
             for field in self.fields:
@@ -45,10 +45,10 @@ class Pool:
                     for line in data
                 ])
                 self.classification_labels = np.array([(
-                        0 if (line['images_metric'][2] - line['images_metric'][1]) == 0 else
-                        1 if (line['images_metric'][2] - line['images_metric'][1]) > 0 else
+                        0 if (line['images_metric'][2] - line['images_metric'][1]) < 0 else
+                        1 if (line['images_metric'][2] - line['images_metric'][1]) == 0 else
                         2
-                    ) if line['images_metric'] is not None else 0
+                    ) if line['images_metric'] is not None else 1
                     for line in data
                 ])
                 positions_one_hot = np.array([
@@ -57,6 +57,13 @@ class Pool:
                 ])
                 self.regression_features = np.concatenate((self.features, positions_one_hot), axis=1)
                 self.regression_prediction = np.reshape(self.targets, (-1, 1))
+                self.positions_variants = np.array([(
+                        0 if (line['images_metric'][2] - line['images_metric'][1]) < 0 else
+                        1 if (line['images_metric'][2] - line['images_metric'][1]) == 0 else
+                        2
+                    ) if line['images_metric'] is not None else 3
+                    for line in data
+                ])
 
     def log_features(self):
         self.features = np.log(1 + np.absolute(self.features))
@@ -71,7 +78,10 @@ class Pool:
         for i, position in enumerate(self.positions):
             for field in self.fields:
                 if position != self.NONE_POSITION:
-                    pools[self.positions[i] - 1].__dict__[field].append(self.__dict__[field][i])
+                    pools[position].__dict__[field].append(self.__dict__[field][i])
+                else:
+                    for tmp_position in self.POSITIONS:
+                        pools[tmp_position].__dict__[field].append(self.__dict__[field][i])
 
         for pool in pools:
             for field in self.fields:

@@ -1,7 +1,9 @@
 import numpy as np
 
+
 class CounterfactualModelError(Exception):
     pass
+
 
 class CounterfactualModel:
     def __init__(self, models):
@@ -11,7 +13,7 @@ class CounterfactualModel:
         if len(train_pools) != len(self.models):
             raise CounterfactualModelError('Wrong pools noumber')
         for pool, model in zip(train_pools, self.models):
-            model.fit(pool.features, pool.labels)
+            model.fit(pool.features, pool.targets)
 
     def predict(self, test_pool):
         predictions = np.array([
