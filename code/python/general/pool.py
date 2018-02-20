@@ -32,9 +32,9 @@ class Pool:
                 ], -1, self.NONE_POSITION)
                 self.probas = np.array([line['p'] for line in data])
                 self.targets = np.array([
-                    (line['images_metric'][2] - line['images_metric'][1])
+                    ((line['images_metric'][2] - line['images_metric'][1]) if position != self.NONE_POSITION else 0)
                     if line['images_metric'] is not None else 0
-                    for line in data
+                    for line, position in zip(data, self.positions)
                 ])
                 self.queries = np.array([
                     list(map(int, line['query'].split(' ')))
