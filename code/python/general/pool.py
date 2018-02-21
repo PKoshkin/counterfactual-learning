@@ -9,7 +9,7 @@ class PoolError(Exception):
 
 class Pool:
     def __init__(self, *args):
-        self.NONE_POSITION = 10
+        self.NONE_POSITION = 11
         self.NUM_FEATURES = 1052
         self.POSITIONS = np.arange(self.NONE_POSITION)
         self.fields = [
@@ -80,6 +80,7 @@ class Pool:
                 if position != self.NONE_POSITION:
                     pools[position].__dict__[field].append(self.__dict__[field][i])
                 else:
+                    continue
                     for tmp_position in self.POSITIONS:
                         pools[tmp_position].__dict__[field].append(self.__dict__[field][i])
 
@@ -128,3 +129,21 @@ class Pool:
                 pool.__dict__[field] = np.array(pool.__dict__[field])
 
         return pools
+
+    def calibrate(self, propotion=1):
+        non_zero_counter = len(self.targets[self.targets != 0])
+        zero_targets_cum = np.cumsum(self.targets == 0)
+        last_needed_target_index = len(zero_targets_cum[
+            zero_targets_cum <= (propotion * non_zero_counter)
+        ])
+        mask = np.concatenate((
+                np.ones(last_needed_target_index).astype(bool),
+                self.targets[last_needed_target_index:] != 0
+            ), axis=0
+        )
+        for field in self.fields:
+            self.__dict__[field] = self.__dict__[field][mask]
+
+    def filter(self, mask):
+        for field in self.fields:
+            self.__dict__[field] = self.__dict__[field][mask]

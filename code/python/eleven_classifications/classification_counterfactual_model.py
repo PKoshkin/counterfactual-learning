@@ -6,12 +6,14 @@ class CounterfactualModelError(Exception):
 
 
 class ClassificationCounterfactualModel:
-    NONE_POSITION = 10
+    NONE_POSITION = 11
 
     def __init__(self, models):
         self.models = models
 
-    def fit(self, train_pools, kwargs_list):
+    def fit(self, train_pools, kwargs_list=[]):
+        if len(kwargs_list) != len(self.models):
+            kwargs_list = [{} for i in range(ClassificationCounterfactualModel.NONE_POSITION)]
         if len(train_pools) != len(self.models):
             raise CounterfactualModelError('Wrong pools number')
         for pool, model, kwargs in zip(train_pools, self.models, kwargs_list):

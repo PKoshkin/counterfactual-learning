@@ -6,6 +6,8 @@ class CounterfactualModelError(Exception):
 
 
 class CounterfactualModel:
+    NONE_POSITION = 11
+
     def __init__(self, models):
         self.models = models
 
