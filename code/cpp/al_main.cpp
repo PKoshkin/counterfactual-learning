@@ -13,29 +13,28 @@
 
 
 int main(int argc, char* argv[]) {
-    uint16_t test_results_sample_size = 30;
+    uint32_t tests_num = 30;
+    bool need_help = argc < 2 || !strcmp(argv[1], "-h");
+    need_help = need_help || !strcmp(argv[1], "help") || !strcmp(argv[1], "--help");
 
-    uint16_t start_permutaion_ind;
-    if (argc > 2)
-        start_permutaion_ind = atoi(argv[2]);
-    else
-        start_permutaion_ind = 0;
+    if (need_help) {
+        std::cout << "Usage:\n./al_main strategy start_permutaion_ind permutations_num";
+        std::cout << " batch_size initial_size max_labels\nPossible strategies: ";
+        std::cout << "random, US, diversity\n";
+        std::cout << "Example:\n./al_main random 0 30 400 5000 9000";
+        std::cout << std::endl;
+        return 0;
+    }
 
-    uint16_t permutations_num;
-    if (argc > 3)
-        permutations_num = atoi(argv[3]);
-    else
-        permutations_num = test_results_sample_size;
+    std::cout << "Running with following params:" << std::endl;
+    std::cout << "strategy: " << argv[1] << std::endl;
+    uint32_t start_permutaion_ind = get_uint_param(argc, argv, 2, 0, "start_permutaion_ind");
+    uint32_t permutations_num = get_uint_param(argc, argv, 3, tests_num, "permutations_num");
+    uint32_t batch_size = get_uint_param(argc, argv, 4, 400, "batch_size");
+    uint32_t initial_size = get_uint_param(argc, argv, 5, 5000, "initial_size");
+    uint32_t max_labels = get_uint_param(argc, argv, 6, 9000, "max_labels");
 
-    uint16_t batch_size;
-    if (argc > 4)
-        batch_size = atoi(argv[4]);
-    else
-        batch_size = 400;
-
-    uint16_t end_permutaiont_ind = start_permutaion_ind + permutations_num;
-    uint16_t initial_size = 5000;
-    uint16_t max_labels = 9000;
+    uint32_t end_permutaiont_ind = start_permutaion_ind + permutations_num;
     std::string log_filename = "al_test_results.txt";
 
     char pool_path[100] = "../../pool.json";
@@ -45,7 +44,7 @@ int main(int argc, char* argv[]) {
     Pool test_pool = pool_pair.second;
 
     std::vector<std::vector<int>> permutations = get_permutations(
-        test_results_sample_size,
+        tests_num,
         train_pool.size(),
         0
     );
@@ -55,44 +54,17 @@ int main(int argc, char* argv[]) {
 
     std::unique_ptr<ActiveLearningAlgo> active_learning_algo;
     std::unique_ptr<BasePoolBasedActiveLearningStrategy> strategy;
-
-    if (!strcmp(argv[1], "random")) {
-        active_learning_algo = std::move(std::unique_ptr<ActiveLearningAlgo>(
-            new PoolBasedPassiveLearningAlgo(
-                &model,
-                initial_size,
-                batch_size,
-                max_labels,
-                log_filename,
-                &get_metric
-            )
-        ));
-    } else {
-        if (!strcmp(argv[1], "US")) {
-            strategy = std::move(std::unique_ptr<BasePoolBasedActiveLearningStrategy>(
-                new PoolBasedUncertaintySamplingStrategy
-            ));
-        }
-        else if (!strcmp(argv[1], "diversity")) {
-            strategy = std::move(std::unique_ptr<BasePoolBasedActiveLearningStrategy>(
-                new PoolBasedDiversity(0.2)
-            ));
-        }
-        else
-            throw 1;
-
-        active_learning_algo = std::move(std::unique_ptr<ActiveLearningAlgo>(
-            new PoolBasedActiveLearningAlgo(
-                &model,
-                strategy.get(),
-                initial_size,
-                batch_size,
-                max_labels,
-                log_filename,
-                &get_metric
-            )
-        ));
-    }
+    set_algo(
+        argv[1],
+        active_learning_algo,
+        strategy,
+        model,
+        initial_size,
+        batch_size,
+        max_labels,
+        log_filename,
+        &get_metric
+    );
 
     test_active_learning_algo(
         active_learning_algo.get(),

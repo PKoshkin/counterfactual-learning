@@ -12,9 +12,14 @@
 class ActiveLearningAlgo {
 protected:
     CounterfacturalModel* model;
-    uint16_t initial_size;
+    uint32_t initial_size;
     Metric* metric;
     std::string log_file;
+    void start_log(
+        std::ofstream& stream,
+        const Pool& train_pool,
+        const Pool& test_pool
+    ) const;
 public:
     virtual std::string name() const = 0;
     virtual CounterfacturalModel* train(
@@ -27,17 +32,17 @@ public:
 
 class PoolBasedActiveLearningAlgo : public ActiveLearningAlgo {
 private:
-    uint16_t max_labels;
-    uint16_t batch_size;
+    uint32_t max_labels;
+    uint32_t batch_size;
     BasePoolBasedActiveLearningStrategy* strategy;
 public:
     virtual std::string name() const;
     PoolBasedActiveLearningAlgo(
         CounterfacturalModel* model,
         BasePoolBasedActiveLearningStrategy* strategy,
-        uint16_t initial_size,
-        uint16_t batch_size,
-        uint16_t max_labels,
+        uint32_t initial_size,
+        uint32_t batch_size,
+        uint32_t max_labels,
         std::string log_file,
         Metric* metric
     );
@@ -51,15 +56,15 @@ public:
 
 class PoolBasedPassiveLearningAlgo : public ActiveLearningAlgo {
 private:
-    uint16_t max_labels;
-    uint16_t batch_size;
+    uint32_t max_labels;
+    uint32_t batch_size;
 public:
     virtual std::string name() const;
     PoolBasedPassiveLearningAlgo(
         CounterfacturalModel* model,
-        uint16_t initial_size,
-        uint16_t batch_size,
-        uint16_t max_labels,
+        uint32_t initial_size,
+        uint32_t batch_size,
+        uint32_t max_labels,
         std::string log_file,
         Metric* metric
     );

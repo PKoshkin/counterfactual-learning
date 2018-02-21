@@ -50,6 +50,9 @@ class PoolBasedDiversity : public BasePoolBasedActiveLearningStrategy {
 private:
     double seen_labeled_objects_share;
     std::vector<double> current_scores;
+    std::vector<double> object_norms;
+
+    double cosin_similarity(const Matrix& factors, uint32_t ind_a, uint32_t ind_b);
 public:
     PoolBasedDiversity(double seen_labeled_objects_share);
     virtual bool is_model_free();

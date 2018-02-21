@@ -5,12 +5,27 @@
 #include <iostream>
 
 
+void ActiveLearningAlgo::start_log(
+    std::ofstream& stream,
+    const Pool& train_pool,
+    const Pool& test_pool
+) const {
+    if (log_file.size() > 0) {
+        stream.open(log_file, std::ofstream::out | std::ofstream::app);
+        stream << "\nAlgorithm with following features was applied:\n" << name() << std::endl;
+        stream << "train pool size: " << train_pool.size() << std::endl;
+        stream << "test pool size: " << test_pool.size() << std::endl;
+        stream << std::endl;
+    }
+}
+
+
 PoolBasedActiveLearningAlgo::PoolBasedActiveLearningAlgo(
         CounterfacturalModel* model,
         BasePoolBasedActiveLearningStrategy* strategy,
-        uint16_t initial_size,
-        uint16_t batch_size,
-        uint16_t max_labels,
+        uint32_t initial_size,
+        uint32_t batch_size,
+        uint32_t max_labels,
         std::string log_file,
         Metric* metric) : strategy(strategy), batch_size(batch_size), max_labels(max_labels) {
     this->model = model;
@@ -39,12 +54,9 @@ CounterfacturalModel* PoolBasedActiveLearningAlgo::train(
         const Pool& test_pool) {
 
     std::ofstream stream;
-    if (log_file.size() > 0) {
-        stream.open(log_file, std::ofstream::out | std::ofstream::app);
-        stream << "Apply " << name() << "\n" << std::endl;
-    }
+    start_log(stream, train_pool, test_pool);
 
-    uint16_t current_max_labels = max_labels;
+    uint32_t current_max_labels = max_labels;
     if (max_labels == 0 || max_labels > train_pool.size())
         current_max_labels = train_pool.size();
 
@@ -61,45 +73,51 @@ CounterfacturalModel* PoolBasedActiveLearningAlgo::train(
 
     strategy->initialize(train_pool, permutation, initial_size);
     std::cout << "\nStart active learning train" << std::endl;
+    bool was_error = false;
+    try {
+        while (labeled_pool.size() < current_max_labels) {
+            std::list<std::pair<std::list<int>::iterator, double>> batch;
+            uint32_t curr_batch_size = std::min(batch_size, uint32_t(current_max_labels - labeled_pool.size()));
+            for (auto unlabeled_ind = unlabeled_indexes.begin() ; unlabeled_ind != unlabeled_indexes.end(); ++unlabeled_ind) {
+                double score = strategy->get_score(model, train_pool, *unlabeled_ind);
+                bool suit = false;
 
-    while (labeled_pool.size() < current_max_labels) {
-        std::list<std::pair<std::list<int>::iterator, double>> batch;
-        uint16_t curr_batch_size = std::min(batch_size, uint16_t(current_max_labels - labeled_pool.size()));
-        for (auto unlabeled_ind = unlabeled_indexes.begin() ; unlabeled_ind != unlabeled_indexes.end(); ++unlabeled_ind) {
-            double score = strategy->get_score(model, train_pool, *unlabeled_ind);
-            bool suit = false;
+                for (auto it = batch.begin(); it != batch.end(); ++it)
+                    if (it->second < score) {
+                        batch.insert(it, {unlabeled_ind, score});
+                        suit = true;
+                        break;
+                    }
 
-            for (auto it = batch.begin(); it != batch.end(); ++it)
-                if (it->second < score) {
-                    batch.insert(it, {unlabeled_ind, score});
-                    suit = true;
-                    break;
-                }
+                if (suit && batch.size() > curr_batch_size)
+                    batch.pop_back();
+                if (!suit && batch.size() < curr_batch_size)
+                    batch.push_back({unlabeled_ind, score});
+            }
+            std::vector<int> batch_ind;
+            batch_ind.reserve(batch.size());
+            for (auto it: batch) {
+                batch_ind.push_back(*(it.first));
+                labeled_pool.push_back(train_pool.get(*(it.first)));
+                unlabeled_indexes.erase(it.first);
+            }
 
-            if (suit && batch.size() > curr_batch_size)
-                batch.pop_back();
-            if (!suit && batch.size() < curr_batch_size)
-                batch.push_back({unlabeled_ind, score});
-        }
-        std::vector<int> batch_ind;
-        batch_ind.reserve(batch.size());
-        for (auto it: batch) {
-            batch_ind.push_back(*(it.first));
-            labeled_pool.push_back(train_pool.get(*(it.first)));
-            unlabeled_indexes.erase(it.first);
-        }
+            strategy->update(train_pool, batch_ind, unlabeled_indexes);
 
-        strategy->update(train_pool, batch_ind, unlabeled_indexes);
-
-        if (log_file.size() > 0 || !strategy->is_model_free())
-            model->fit(labeled_pool);
-        if (log_file.size() > 0) {
-            std::vector<int> predictions = model->predict(test_pool);
-            stream << metric(test_pool, predictions) << std::endl;
+            if (log_file.size() > 0 || !strategy->is_model_free())
+                model->fit(labeled_pool);
+            if (log_file.size() > 0) {
+                std::vector<int> predictions = model->predict(test_pool);
+                stream << metric(test_pool, predictions) << std::endl;
+            }
         }
     }
-
-        if (strategy->is_model_free())
+    catch (...) {
+        if (labeled_pool.size() > 0)
+            stream << "error!!!\n";
+        was_error = true;
+    }
+    if (!was_error && labeled_pool.size() == 0 && strategy->is_model_free())
         model->fit(labeled_pool);
 
     if (log_file.size() > 0) {
@@ -127,9 +145,9 @@ std::string PoolBasedPassiveLearningAlgo::name() const {
 
 PoolBasedPassiveLearningAlgo::PoolBasedPassiveLearningAlgo(
         CounterfacturalModel* model,
-        uint16_t initial_size,
-        uint16_t batch_size,
-        uint16_t max_labels,
+        uint32_t initial_size,
+        uint32_t batch_size,
+        uint32_t max_labels,
         std::string log_file,
         Metric* metric) : max_labels(max_labels), batch_size(batch_size) {
     this->model = model;
@@ -148,13 +166,10 @@ CounterfacturalModel* PoolBasedPassiveLearningAlgo::train(
     actual_train_pool.reserve(max_labels);
 
     std::ofstream stream;
-    if (log_file.size() > 0) {
-        stream.open(log_file, std::ofstream::out | std::ofstream::app);
-        stream << "Algorithm with following features was applied:\n" << name() << "\n" << std::endl;
-    }
+    start_log(stream, train_pool, test_pool);
 
     for (int batch_start = initial_size; batch_start < max_labels; batch_start += batch_size) {
-        int batch_end = std::min(batch_start + batch_size, static_cast<int>(max_labels));
+        int batch_end = std::min(batch_start + batch_size, max_labels);
         for (int obj_ind = batch_start; obj_ind < batch_end; ++obj_ind)
             actual_train_pool.push_back(train_pool.get(permutation[obj_ind]));
         model->fit(actual_train_pool);

@@ -12,6 +12,11 @@ STRATEGY_KEY = 'strategy'
 BATCH_SIZE_KEY = 'batch size'
 INITIAL_SIZE_KEY = 'initial size'
 MAX_QUERIES_KEY = 'max queries'
+TRAIN_SIZE_KEY = 'train pool size'
+TEST_SIZE_KEY = ' test pool size'
+
+DEFAULT_TRAIN_SIZE = 67500
+
 START_LINE = "Algorithm with following features was applied:"
 
 
@@ -31,6 +36,7 @@ def _get_params(results_lines, line_ind):
         else:
             algo_params[key] = value
         line_ind += 1
+        algo_params.setdefault(TRAIN_SIZE_KEY, DEFAULT_TRAIN_SIZE)
     return line_ind, frozendict(algo_params)
 
 
@@ -81,14 +87,27 @@ def read_results(filename):
     return results
 
 
-def draw_plots(results):
+def draw_plots(results, fontsize=12, *args, **kwargs):
     for algo_params, metrics in results.items():
+        batch_size = algo_params[BATCH_SIZE_KEY]
+        initial_size = algo_params[INITIAL_SIZE_KEY] + batch_size
+        max_queries = algo_params[MAX_QUERIES_KEY]
+        train_size = algo_params[TRAIN_SIZE_KEY]
+
         plt.errorbar(
-            np.arange(_get_batches_num(algo_params)),
+            np.arange(initial_size, max_queries + 1, batch_size) / train_size,
             metrics[-1].mean(axis=0),
-            yerr=metrics[-1].var(axis=0),
+            yerr=metrics[-1].std(axis=0, ddof=1) / metrics.shape[1]**0.5,
             label=_get_name(algo_params),
+            capsize=3,
+            capthick=1.2,
+            elinewidth=0.8,
+            *args, **kwargs,
         )
+
+    plt.title("Active learning algorithms' performace", fontsize=fontsize)
+    plt.xlabel('Training instances share', fontsize=fontsize)
+    plt.ylabel('Reward', fontsize=fontsize)
     plt.legend()
     plt.show()
 
@@ -114,6 +133,7 @@ def print_stats(results):
     for key, value in results.items():
         print(
             _get_name(key) + ' results:\n'
+            'Tests num: ' + str(value.shape[1]) + '\n' +
             'Mean: ' + str(value[-1, :, -1].mean()) + '\n' +
             'Std: ' + str(value[-1, :, -1].std(ddof=1)) + '\n'
         )

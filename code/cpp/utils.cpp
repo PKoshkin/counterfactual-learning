@@ -1,5 +1,6 @@
 #include "utils.h"
 
+#include <stdexcept>
 #include <fstream>
 #include <string>
 #include <cmath>
@@ -171,4 +172,21 @@ void softmax(std::vector<double>& array) {
 
     for (auto& iter: array)
         iter /= exp_sum;
+}
+
+
+uint32_t get_uint_param(
+    int argc,
+    char* argv[],
+    uint16_t index,
+    uint32_t default_value,
+    const char name[]
+) {
+    uint32_t param;
+    if (argc > index)
+        param = atoi(argv[index]);
+    else
+        param = default_value;
+    std::cout << name << ": " << param << std::endl;
+    return param;
 }

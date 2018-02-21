@@ -2,6 +2,7 @@
 #include "metric.h"
 #include "model.h"
 
+#include <cstring>
 #include <cmath>
 
 
@@ -18,5 +19,58 @@ void test_active_learning_algo(
     );
 
     for (int j = start_permutaion_ind; j < end_permutaiont_ind; ++j)
-        CounterfacturalModel* model = active_learning_algo->train(train_pool, permutations[j], test_pool);
+        active_learning_algo->train(train_pool, permutations[j], test_pool);
+}
+
+
+void set_algo(
+    const char strategy_name[],
+    std::unique_ptr<ActiveLearningAlgo>& active_learning_algo,
+    std::unique_ptr<BasePoolBasedActiveLearningStrategy>& strategy,
+    CounterfacturalModel& model,
+    uint32_t initial_size,
+    uint32_t batch_size,
+    uint32_t max_labels,
+    std::string log_filename,
+    Metric* metric
+) {
+    if (!strcmp(strategy_name, "random")) {
+        active_learning_algo = std::move(std::unique_ptr<ActiveLearningAlgo>(
+            new PoolBasedPassiveLearningAlgo(
+                &model,
+                initial_size,
+                batch_size,
+                max_labels,
+                log_filename,
+                metric
+            )
+        ));
+    } else {
+        if (!strcmp(strategy_name, "US")) {
+            strategy = std::move(std::unique_ptr<BasePoolBasedActiveLearningStrategy>(
+                new PoolBasedUncertaintySamplingStrategy
+            ));
+        }
+        else if (!strcmp(strategy_name, "diversity")) {
+            strategy = std::move(std::unique_ptr<BasePoolBasedActiveLearningStrategy>(
+                new PoolBasedDiversity(0.2)
+            ));
+        }
+        else {
+            std::string mes = std::string("Invalid strategy: ") + std::string(strategy_name);
+            throw std::invalid_argument(mes);
+        }
+
+        active_learning_algo = std::move(std::unique_ptr<ActiveLearningAlgo>(
+            new PoolBasedActiveLearningAlgo(
+                &model,
+                strategy.get(),
+                initial_size,
+                batch_size,
+                max_labels,
+                log_filename,
+                metric
+            )
+        ));
+    }
 }
