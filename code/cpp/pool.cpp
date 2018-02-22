@@ -45,7 +45,11 @@ void Pool::assign(const Pool& pool, int begin, int end) {
 }
 
 
-void Pool::assign(const Pool& pool, std::vector<int>::const_iterator begin, std::vector<int>::const_iterator end) {
+void Pool::assign(
+    const Pool& pool,
+    std::vector<int>::const_iterator begin,
+    std::vector<int>::const_iterator end
+) {
     resize(end - begin);
 
     for (auto it = begin; it != end; ++it)
@@ -77,7 +81,7 @@ void Pool::push_back(const Object& obj) {
 }
 
 
-void Pool::erase(int index) {
+void Pool::erase(uint32_t index) {
     positions.erase(positions.begin() + index);
     probas.erase(probas.begin() + index);
     metrics.erase(metrics.begin() + index);
@@ -85,7 +89,7 @@ void Pool::erase(int index) {
 }
 
 
-void Pool::set(int index, const Object& obj) {
+void Pool::set(uint32_t index, const Object& obj) {
     if (index < size()) {
         positions[index] = obj.position;
         metrics[index] = obj.metric;
@@ -97,7 +101,13 @@ void Pool::set(int index, const Object& obj) {
 }
 
 
-void Pool::set(int index, int position, double metric, double proba, const std::vector<double>& factors) {
+void Pool::set(
+    uint32_t index,
+    int position,
+    double metric,
+    double proba,
+    const std::vector<double>& factors
+) {
     if (index < size()) {
         positions[index] = position;
         metrics[index] = metric;
@@ -109,7 +119,7 @@ void Pool::set(int index, int position, double metric, double proba, const std::
 }
 
 
-Object Pool::get(int index) const {
+Object Pool::get(uint32_t index) const {
     if (index < size())
         return Object(positions[index], metrics[index], probas[index], factors[index]);
     else
