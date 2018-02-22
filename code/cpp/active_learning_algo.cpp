@@ -115,7 +115,7 @@ void PoolBasedActiveLearningAlgo::initialize_train(
     const std::vector<int>& permutation
 ) {
     unlabeled_indexes.clear();
-    for (int index = initial_size; index < permutation.size(); ++index)
+    for (uint32_t index = initial_size; index < permutation.size(); ++index)
         unlabeled_indexes.push_back(permutation[index]);
     if (!(strategy->is_model_free()))
         model->fit(labeled_pool);
