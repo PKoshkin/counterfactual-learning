@@ -16,6 +16,7 @@ TRAIN_SIZE_KEY = 'train pool size'
 TEST_SIZE_KEY = ' test pool size'
 
 DEFAULT_TRAIN_SIZE = 67500
+DEFAULT_TEST_SIZE = 22500
 
 ERROR_LINE = "error!!!"
 START_LINE = "Algorithm with following features was applied:"
@@ -38,6 +39,7 @@ def _get_params(results_lines, line_ind):
             algo_params[key] = value
         line_ind += 1
         algo_params.setdefault(TRAIN_SIZE_KEY, DEFAULT_TRAIN_SIZE)
+        algo_params.setdefault(TEST_SIZE_KEY, DEFAULT_TEST_SIZE)
     return line_ind, frozendict(algo_params)
 
 
@@ -116,10 +118,18 @@ def draw_plots(
         initial_size = algo_params[INITIAL_SIZE_KEY] + batch_size
         max_queries = algo_params[MAX_QUERIES_KEY]
         train_size = algo_params[TRAIN_SIZE_KEY]
+        test_size = algo_params[TEST_SIZE_KEY]
+
+        x = np.concatenate((
+            np.arange(initial_size, max_queries, batch_size),
+            [max_queries]
+        )) / (train_size + test_size)
+        y = metrics[-1].mean(axis=0)
+        yerr = metrics[-1].std(axis=0, ddof=1) / metrics[-1].shape[0]**0.5
         plt.errorbar(
-            np.arange(initial_size, max_queries + 1, batch_size) / train_size,
-            metrics[-1].mean(axis=0),
-            yerr=metrics[-1].std(axis=0, ddof=1) / metrics[-1].shape[0]**0.5,
+            x,
+            y,
+            yerr=yerr,
             label=_get_name(algo_params),
             capsize=3,
             capthick=1.2,

@@ -36,43 +36,36 @@ void XGBoostModel::fit(const Matrix& features, const std::vector<double>& scores
     std::shared_ptr<float> train_features;
     std::shared_ptr<float> train_labels;
 
-    while (true) {
-        try {
-            booster.reset();
-            DMatrixRAIIHandle train_data;
-            int rows = features.size();
-            int cols = features[0].size();
+    booster.reset();
+    DMatrixRAIIHandle train_data;
+    int rows = features.size();
+    int cols = features[0].size();
 
-            train_features = std::shared_ptr<float>(new float[rows * cols]);
-            train_labels = std::shared_ptr<float>(new float[rows]);
+    train_features = std::shared_ptr<float>(new float[rows * cols]);
+    train_labels = std::shared_ptr<float>(new float[rows]);
 
-            for (int row = 0; row < rows; ++row) {
-                for (int col = 0; col < cols; ++col) {
-                    int index = row * cols + col;
-                    train_features.get()[index] = static_cast<float>(features[row][col]);
-                }
-                train_labels.get()[row] = static_cast<float>(scores[row]);
-            }
-
-            XGDMatrixCreateFromMat(train_features.get(), rows, cols, -1, train_data.get());
-            XGDMatrixSetFloatInfo(*train_data.get(), "label", train_labels.get(), rows);
-
-            XGBoosterCreate(train_data.get(), 1, booster.get_ptr());
-            XGBoosterSetParam(booster.get(), "eta", "0.1");
-            XGBoosterSetParam(booster.get(), "max_depth", "3");
-            XGBoosterSetParam(booster.get(), "base_score", "0");
-            XGBoosterSetParam(booster.get(), "silent", "1");
-
-            for (const auto& param: booster_params)
-                XGBoosterSetParam(booster.get(), param.first.c_str(), param.second.c_str());
-
-            for (int iteration = 0; iteration < iteration_number; ++iteration)
-                XGBoosterUpdateOneIter(booster.get(), iteration, *train_data.get());
-
-            return;
+    for (int row = 0; row < rows; ++row) {
+        for (int col = 0; col < cols; ++col) {
+            int index = row * cols + col;
+            train_features.get()[index] = static_cast<float>(features[row][col]);
         }
-        catch (std::bad_alloc err) {}
+        train_labels.get()[row] = static_cast<float>(scores[row]);
     }
+
+    XGDMatrixCreateFromMat(train_features.get(), rows, cols, -1, train_data.get());
+    XGDMatrixSetFloatInfo(*train_data.get(), "label", train_labels.get(), rows);
+
+    XGBoosterCreate(train_data.get(), 1, booster.get_ptr());
+    XGBoosterSetParam(booster.get(), "eta", "0.1");
+    XGBoosterSetParam(booster.get(), "max_depth", "3");
+    XGBoosterSetParam(booster.get(), "base_score", "0");
+    XGBoosterSetParam(booster.get(), "silent", "1");
+
+    for (const auto& param: booster_params)
+        XGBoosterSetParam(booster.get(), param.first.c_str(), param.second.c_str());
+
+    for (int iteration = 0; iteration < iteration_number; ++iteration)
+        XGBoosterUpdateOneIter(booster.get(), iteration, *train_data.get());
 }
 
 
