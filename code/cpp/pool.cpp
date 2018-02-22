@@ -7,6 +7,15 @@ int Pool::size() const {
     return metrics.size();
 }
 
+
+void Pool::clear() {
+    factors.clear();
+    positions.clear();
+    metrics.clear();
+    probas.clear();
+}
+
+
 void Pool::reserve(int size) {
     factors.reserve(size);
     positions.reserve(size);

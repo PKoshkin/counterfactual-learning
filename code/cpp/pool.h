@@ -24,6 +24,7 @@ public:
 
     const std::vector<int> POSITIONS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 100};
     Pool() = default;
+    void clear();
     void reserve(int size);
     void resize(int size);
     int size() const;
