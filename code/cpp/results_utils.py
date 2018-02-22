@@ -17,6 +17,7 @@ TEST_SIZE_KEY = ' test pool size'
 
 DEFAULT_TRAIN_SIZE = 67500
 
+ERROR_LINE = "error!!!"
 START_LINE = "Algorithm with following features was applied:"
 
 
@@ -77,27 +78,37 @@ def read_results(filename):
         line_ind = _skip_blank(results_lines, line_ind)
 
         results[algo_params][-1].append([])
-        while results_lines[line_ind] != "":
+        while results_lines[line_ind] != "" and results_lines[line_ind] != ERROR_LINE:
             results[algo_params][-1][-1].append(float(results_lines[line_ind]))
+            line_ind += 1
+        if results_lines[line_ind] == ERROR_LINE:
+            results[algo_params][-1].pop()
             line_ind += 1
         line_ind = _skip_blank(results_lines, line_ind)
 
+    empty_keys = []
     for key, value in results.items():
-        results[key] = np.array(value)
+        results[key] = [np.array(tests_array) for tests_array in value
+                        if len(tests_array) > 0]
+        if len(results[key]) == 0:
+            empty_keys.append(key)
+    for key in empty_keys:
+        results.pop(key)
     return results
 
 
-def draw_plots(results, fontsize=12, *args, **kwargs):
+def draw_plots(results, min_batches_num=2, min_tests_num=1, fontsize=12, *args, **kwargs):
     for algo_params, metrics in results.items():
+        if metrics[-1].shape[0] < min_tests_num or metrics[-1].shape[1] < min_batches_num:
+            continue
         batch_size = algo_params[BATCH_SIZE_KEY]
         initial_size = algo_params[INITIAL_SIZE_KEY] + batch_size
         max_queries = algo_params[MAX_QUERIES_KEY]
         train_size = algo_params[TRAIN_SIZE_KEY]
-
         plt.errorbar(
             np.arange(initial_size, max_queries + 1, batch_size) / train_size,
             metrics[-1].mean(axis=0),
-            yerr=metrics[-1].std(axis=0, ddof=1) / metrics.shape[1]**0.5,
+            yerr=metrics[-1].std(axis=0, ddof=1) / metrics[-1].shape[0]**0.5,
             label=_get_name(algo_params),
             capsize=3,
             capthick=1.2,
@@ -113,8 +124,8 @@ def draw_plots(results, fontsize=12, *args, **kwargs):
 
 
 def mannwhitneyu_test(results, key_a, key_b, pvalue_bound=0.05):
-    a = results[key_a][-1, :, -1]
-    b = results[key_b][-1, :, -1]
+    a = results[key_a][-1][:, -1]
+    b = results[key_b][-1][:, -1]
     _, pvalue = ss.mannwhitneyu(a, b, alternative='less')
     if pvalue < pvalue_bound:
         verdict = " is less than "
@@ -133,9 +144,9 @@ def print_stats(results):
     for key, value in results.items():
         print(
             _get_name(key) + ' results:\n'
-            'Tests num: ' + str(value.shape[1]) + '\n' +
-            'Mean: ' + str(value[-1, :, -1].mean()) + '\n' +
-            'Std: ' + str(value[-1, :, -1].std(ddof=1)) + '\n'
+            'Tests num: ' + str(value[-1].shape[0]) + '\n' +
+            'Mean: ' + str(value[-1][:, -1].mean()) + '\n' +
+            'Std: ' + str(value[-1][:, -1].std(ddof=1)) + '\n'
         )
 
 

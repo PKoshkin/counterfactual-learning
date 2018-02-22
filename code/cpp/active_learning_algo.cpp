@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <unistd.h>
 
 
 void ActiveLearningAlgo::start_log(
@@ -73,50 +74,60 @@ CounterfacturalModel* PoolBasedActiveLearningAlgo::train(
 
     strategy->initialize(train_pool, permutation, initial_size);
     std::cout << "\nStart active learning train" << std::endl;
-    bool was_error = false;
-    try {
-        while (labeled_pool.size() < current_max_labels) {
-            std::list<std::pair<std::list<int>::iterator, double>> batch;
-            uint32_t curr_batch_size = std::min(batch_size, uint32_t(current_max_labels - labeled_pool.size()));
-            for (auto unlabeled_ind = unlabeled_indexes.begin() ; unlabeled_ind != unlabeled_indexes.end(); ++unlabeled_ind) {
-                double score = strategy->get_score(model, train_pool, *unlabeled_ind);
-                bool suit = false;
+    bool was_error = true;
+    for (int try_index = 0; try_index < 3; ++try_index) {
+        try {
+            while (labeled_pool.size() < current_max_labels) {
+                std::list<std::pair<std::list<int>::iterator, double>> batch;
+                uint32_t curr_batch_size = std::min(
+                    batch_size,
+                    uint32_t(current_max_labels - labeled_pool.size())
+                );
+                for (
+                    auto unlabeled_ind = unlabeled_indexes.begin();
+                    unlabeled_ind != unlabeled_indexes.end();
+                    ++unlabeled_ind
+                ) {
+                    double score = strategy->get_score(model, train_pool, *unlabeled_ind);
+                    bool suit = false;
 
-                for (auto it = batch.begin(); it != batch.end(); ++it)
-                    if (it->second < score) {
-                        batch.insert(it, {unlabeled_ind, score});
-                        suit = true;
-                        break;
-                    }
+                    for (auto it = batch.begin(); it != batch.end(); ++it)
+                        if (it->second < score) {
+                            batch.insert(it, {unlabeled_ind, score});
+                            suit = true;
+                            break;
+                        }
 
-                if (suit && batch.size() > curr_batch_size)
-                    batch.pop_back();
-                if (!suit && batch.size() < curr_batch_size)
-                    batch.push_back({unlabeled_ind, score});
+                    if (suit && batch.size() > curr_batch_size)
+                        batch.pop_back();
+                    if (!suit && batch.size() < curr_batch_size)
+                        batch.push_back({unlabeled_ind, score});
+                }
+                std::vector<int> batch_ind;
+                batch_ind.reserve(batch.size());
+                for (auto it: batch) {
+                    batch_ind.push_back(*(it.first));
+                    labeled_pool.push_back(train_pool.get(*(it.first)));
+                    unlabeled_indexes.erase(it.first);
+                }
+
+                strategy->update(train_pool, batch_ind, unlabeled_indexes);
+
+                if (log_file.size() > 0 || !strategy->is_model_free())
+                    model->fit(labeled_pool);
+                if (log_file.size() > 0) {
+                    std::vector<int> predictions = model->predict(test_pool);
+                    stream << metric(test_pool, predictions) << std::endl;
+                }
             }
-            std::vector<int> batch_ind;
-            batch_ind.reserve(batch.size());
-            for (auto it: batch) {
-                batch_ind.push_back(*(it.first));
-                labeled_pool.push_back(train_pool.get(*(it.first)));
-                unlabeled_indexes.erase(it.first);
-            }
-
-            strategy->update(train_pool, batch_ind, unlabeled_indexes);
-
-            if (log_file.size() > 0 || !strategy->is_model_free())
-                model->fit(labeled_pool);
-            if (log_file.size() > 0) {
-                std::vector<int> predictions = model->predict(test_pool);
-                stream << metric(test_pool, predictions) << std::endl;
-            }
+            was_error = false;
+            break;
         }
+        catch (...) {sleep(3);}
     }
-    catch (...) {
-        if (labeled_pool.size() > 0)
-            stream << "error!!!\n";
-        was_error = true;
-    }
+    if (was_error && labeled_pool.size() > 0)
+        stream << "error!!!" << std::endl;
+
     if (!was_error && labeled_pool.size() == 0 && strategy->is_model_free())
         model->fit(labeled_pool);
 
