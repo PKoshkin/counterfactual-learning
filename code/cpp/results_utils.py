@@ -97,8 +97,19 @@ def read_results(filename):
     return results
 
 
-def draw_plots(results, min_batches_num=2, min_tests_num=1, fontsize=12, *args, **kwargs):
-    for algo_params, metrics in results.items():
+def draw_plots(
+    results,
+    keys=None,
+    min_batches_num=2,
+    min_tests_num=1,
+    fontsize=12,
+    *args,
+    **kwargs
+):
+    if keys is None:
+        keys = results.keys()
+    for algo_params in keys:
+        metrics = results[algo_params]
         if metrics[-1].shape[0] < min_tests_num or metrics[-1].shape[1] < min_batches_num:
             continue
         batch_size = algo_params[BATCH_SIZE_KEY]
@@ -140,8 +151,11 @@ def mannwhitneyu_test(results, key_a, key_b, pvalue_bound=0.05):
     print(_get_name(key_a) + verdict + _get_name(key_b) + " with pvalue " + str(pvalue))
 
 
-def print_stats(results):
-    for key, value in results.items():
+def print_stats(results, keys=None):
+    if keys is None:
+        keys = results.keys()
+    for key in keys:
+        value = results[key]
         print(
             _get_name(key) + ' results:\n'
             'Tests num: ' + str(value[-1].shape[0]) + '\n' +
