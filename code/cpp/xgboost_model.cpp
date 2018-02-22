@@ -3,9 +3,15 @@
 #include <algorithm>
 #include <new>
 #include <exception>
+#include <iostream>
 
 
-void XGBoosterRAIIHandle::reset() {if (booster) XGBoosterFree(booster);}
+void XGBoosterRAIIHandle::reset() {
+    if (booster) {
+        XGBoosterFree(booster);
+        booster = nullptr;
+    }
+}
 BoosterHandle* XGBoosterRAIIHandle::get_ptr() {return &booster;}
 BoosterHandle XGBoosterRAIIHandle::get() const {return booster;}
 XGBoosterRAIIHandle::XGBoosterRAIIHandle(BoosterHandle booster) : booster(booster) {}
@@ -23,7 +29,7 @@ public:
 
 
 XGBoostModel::XGBoostModel(uint16_t iteration_number, const BoosterParams& booster_params)
-    : iteration_number(iteration_number), booster_params(booster_params), booster() {}
+    : iteration_number(iteration_number), booster_params(booster_params) {}
 
 
 void XGBoostModel::fit(const Matrix& features, const std::vector<double>& scores) {
@@ -49,7 +55,7 @@ void XGBoostModel::fit(const Matrix& features, const std::vector<double>& scores
             }
 
             XGDMatrixCreateFromMat(train_features.get(), rows, cols, -1, train_data.get());
-            XGDMatrixSetFloatInfo(train_data.get(), "label", train_labels.get(), rows);
+            XGDMatrixSetFloatInfo(*train_data.get(), "label", train_labels.get(), rows);
 
             XGBoosterCreate(train_data.get(), 1, booster.get_ptr());
             XGBoosterSetParam(booster.get(), "eta", "0.1");
