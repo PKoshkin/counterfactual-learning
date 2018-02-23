@@ -80,12 +80,16 @@ def read_results(filename):
         line_ind = _skip_blank(results_lines, line_ind)
 
         results[algo_params][-1].append([])
-        while results_lines[line_ind] != "" and results_lines[line_ind] != ERROR_LINE:
+        while line_ind < len(results_lines) and results_lines[line_ind] != "" and results_lines[line_ind] != ERROR_LINE:
             results[algo_params][-1][-1].append(float(results_lines[line_ind]))
             line_ind += 1
-        if results_lines[line_ind] == ERROR_LINE:
+        if line_ind < len(results_lines) and results_lines[line_ind] == ERROR_LINE:
             results[algo_params][-1].pop()
             line_ind += 1
+
+        if len(results[algo_params][-1]) > 1 and len(results[algo_params][-1][-1]) != len(results[algo_params][-1][-2]):
+            results[algo_params][-1].pop()
+
         line_ind = _skip_blank(results_lines, line_ind)
 
     empty_keys = []
@@ -103,7 +107,7 @@ def draw_plots(
     results,
     keys=None,
     min_batches_num=2,
-    min_tests_num=1,
+    min_tests_num=5,
     fontsize=12,
     *args,
     **kwargs
@@ -131,9 +135,6 @@ def draw_plots(
             y,
             yerr=yerr,
             label=_get_name(algo_params),
-            capsize=3,
-            capthick=1.2,
-            elinewidth=0.8,
             *args, **kwargs,
         )
 
