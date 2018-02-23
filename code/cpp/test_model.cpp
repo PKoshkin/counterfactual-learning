@@ -6,9 +6,10 @@
 
 
 SimpleClassification::SimpleClassification(uint16_t num_iteration, uint16_t num_class)
-    : model(num_iteration, {{"objective", "multi:softprob"}, {"num_class", std::to_string(num_class)}}),
-    num_class(num_class) {
-}
+    : model(
+        num_iteration,
+        {{"objective", "multi:softprob"}, {"num_class", std::to_string(num_class)}}
+    ), num_class(num_class) {}
 
 
 void SimpleClassification::fit(const Pool& train_pool) {

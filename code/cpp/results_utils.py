@@ -13,7 +13,7 @@ BATCH_SIZE_KEY = 'batch size'
 INITIAL_SIZE_KEY = 'initial size'
 MAX_QUERIES_KEY = 'max queries'
 TRAIN_SIZE_KEY = 'train pool size'
-TEST_SIZE_KEY = ' test pool size'
+TEST_SIZE_KEY = 'test pool size'
 
 DEFAULT_TRAIN_SIZE = 67500
 DEFAULT_TEST_SIZE = 22500
@@ -80,14 +80,15 @@ def read_results(filename):
         line_ind = _skip_blank(results_lines, line_ind)
 
         results[algo_params][-1].append([])
-        while line_ind < len(results_lines) and results_lines[line_ind] != "" and results_lines[line_ind] != ERROR_LINE:
+        while (line_ind < len(results_lines) and results_lines[line_ind] not in [ERROR_LINE, ""]:
             results[algo_params][-1][-1].append(float(results_lines[line_ind]))
             line_ind += 1
         if line_ind < len(results_lines) and results_lines[line_ind] == ERROR_LINE:
             results[algo_params][-1].pop()
             line_ind += 1
 
-        if len(results[algo_params][-1]) > 1 and len(results[algo_params][-1][-1]) != len(results[algo_params][-1][-2]):
+        curr_resutls = results[algo_params][-1]
+        if len(curr_resutls) > 1 and len(curr_resutls[-1]) != len(curr_resutls[-2]):
             results[algo_params][-1].pop()
 
         line_ind = _skip_blank(results_lines, line_ind)

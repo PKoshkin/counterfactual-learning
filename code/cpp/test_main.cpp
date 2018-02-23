@@ -12,11 +12,11 @@
 
 
 int main(int argc, char* argv[]) {
-    uint16_t max_labels = 2000;
+    uint16_t max_labels = 14000;
     uint32_t tests_num = 10;
     uint32_t random_seed = 111;
-    uint16_t initial_size = 1000;
-    uint16_t batch_size = 100;
+    uint16_t initial_size = 3000;
+    uint16_t batch_size = 2000;
 
     Pool pool = get_test_classification_pool("../krkopt.data.txt");
 
@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
         random_seed
     );
 
-    SimpleClassification model(50, 18);
+    SimpleClassification model(50, 2);
 
 
     std::unique_ptr<ActiveLearningAlgo> active_learning_algo;
@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
         batch_size,
         max_labels,
         log_filename,
-        &get_metric
+        &accuracy
     );
 
     test_active_learning_algo(
