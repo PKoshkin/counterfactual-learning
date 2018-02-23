@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
     need_help = need_help || !strcmp(argv[1], "help") || !strcmp(argv[1], "--help");
 
     if (need_help) {
-        std::cout << "Usage:\n./al_main strategy start_permutaion_ind permutations_num";
+        std::cout << "Usage:\n./al_main strategy start_permutaion_ind tests_num";
         std::cout << " batch_size initial_size max_labels\nPossible strategies: ";
         std::cout << "random, US, diversity\n";
         std::cout << "Example:\n./al_main random 0 30 400 5000 9000";
@@ -29,12 +29,12 @@ int main(int argc, char* argv[]) {
     std::cout << "Running with following params:" << std::endl;
     std::cout << "strategy: " << argv[1] << std::endl;
     uint32_t start_permutaion_ind = get_uint_param(argc, argv, 2, 0, "start_permutaion_ind");
-    uint32_t permutations_num = get_uint_param(argc, argv, 3, tests_num, "permutations_num");
+    uint32_t tests_num = get_uint_param(argc, argv, 3, tests_num, "tests_num");
     uint32_t batch_size = get_uint_param(argc, argv, 4, 400, "batch_size");
     uint32_t initial_size = get_uint_param(argc, argv, 5, 5000, "initial_size");
     uint32_t max_labels = get_uint_param(argc, argv, 6, 9000, "max_labels");
 
-    uint32_t end_permutaiont_ind = start_permutaion_ind + permutations_num;
+    uint32_t end_permutaiont_ind = start_permutaion_ind + tests_num;
     std::string log_filename = "al_test_results.txt";
 
     char pool_path[100] = "../../pool.json";
@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
         test_pool,
         permutations,
         start_permutaion_ind,
-        permutations_num
+        tests_num
     );
 
     return 0;

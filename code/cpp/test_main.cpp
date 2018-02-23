@@ -13,7 +13,7 @@
 
 int main(int argc, char* argv[]) {
     uint16_t max_labels = 2000;
-    uint32_t permutations_num = 10;
+    uint32_t tests_num = 10;
     uint32_t random_seed = 111;
     uint16_t initial_size = 1000;
     uint16_t batch_size = 100;
@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
 
     std::string log_filename = "test_US_results.txt";
     std::vector<std::vector<int>> permutations = get_permutations(
-        permutations_num,
+        tests_num,
         train_pool.size(),
         random_seed
     );
@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
         test_pool,
         permutations,
         0,
-        permutations_num
+        tests_num
     );
 
     return 0;
