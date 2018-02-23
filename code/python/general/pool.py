@@ -14,56 +14,53 @@ class Pool:
         self.POSITIONS = np.arange(self.NONE_POSITION)
         self.fields = [
             'features', 'positions', 'probas', 'targets', 'queries', 'prod_positions',
-            'classification_labels', 'regression_features', 'regression_prediction', 'positions_variants'
+            'classification_labels', 'features_with_positions', 'positions_variants'
         ]
-        if len(args) == 0:
-            for field in self.fields:
-                self.__dict__[field] = []
-        elif len(args) == 1:
+        for field in self.fields:
+            self.__dict__[field] = []
+        if len(args) == 1:
             if type(args[0]) != str:
                 raise PoolError("Wrong constructor arguments")
             else:
                 with open(args[0]) as handler:
                     data = [json_from_string(line) for line in handler]
-                self.features = np.array([line['factors'][:self.NUM_FEATURES] for line in data])
-                self.positions = np.clip([
-                    int(line['images_metric'][0]) if line['images_metric'] is not None else self.NONE_POSITION
-                    for line in data
-                ], -1, self.NONE_POSITION)
-                self.probas = np.array([line['p'] for line in data])
-                self.targets = np.array([
-                    ((line['images_metric'][2] - line['images_metric'][1]) if position != self.NONE_POSITION else 0)
-                    if line['images_metric'] is not None else 0
-                    for line, position in zip(data, self.positions)
-                ])
-                self.queries = np.array([
-                    list(map(int, line['query'].split(' ')))
-                    for line in data
-                ])
-                self.prod_positions = np.array([
-                    int(line['prod_pos'])
-                    for line in data
-                ])
-                self.classification_labels = np.array([(
-                        0 if (line['images_metric'][2] - line['images_metric'][1]) < 0 else
-                        1 if (line['images_metric'][2] - line['images_metric'][1]) == 0 else
+                for line in data:
+                    target = (
+                        (line['images_metric'][2] - line['images_metric'][1])
+                        if line['images_metric'] is not None else 0
+                    )
+
+                    self.features.append(line['factors'][:self.NUM_FEATURES])
+                    self.probas.append(line['p'])
+                    self.queries.append(list(map(int, line['query'].split(' '))))
+                    self.prod_positions.append(int(line['prod_pos']))
+                    self.targets.append(target)
+                    self.classification_labels.append(
+                        0 if target < 0 else
+                        1 if target == 0 else
                         2
-                    ) if line['images_metric'] is not None else 1
-                    for line in data
-                ])
+                    )
+                    self.positions_variants.append(
+                        0 if target < 0 else
+                        1 if target == 0 else
+                        2
+                    )
+                    if line['images_metric'] is not None:
+                        self.positions.append(
+                            min(int(line['images_metric'][0]), self.NONE_POSITION)
+                        )
+                    else:
+                        self.positions.append(self.NONE_POSITION)
+                        self.classification_labels.append(1)
+                        self.positions_variants.append(3)
+
                 positions_one_hot = np.array([
                     [0 if position != current_position else 1 for position in self.POSITIONS]
                     for current_position in self.positions
                 ])
-                self.regression_features = np.concatenate((self.features, positions_one_hot), axis=1)
-                self.regression_prediction = np.reshape(self.targets, (-1, 1))
-                self.positions_variants = np.array([(
-                        0 if (line['images_metric'][2] - line['images_metric'][1]) < 0 else
-                        1 if (line['images_metric'][2] - line['images_metric'][1]) == 0 else
-                        2
-                    ) if line['images_metric'] is not None else 3
-                    for line in data
-                ])
+                self.features_with_positions = np.concatenate((self.features, positions_one_hot), axis=1)
+            for field in self.fields:
+                self.__dict__[field] = np.array(self.__dict__[field])
 
     def log_features(self):
         self.features = np.log(1 + np.absolute(self.features))
