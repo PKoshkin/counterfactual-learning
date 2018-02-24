@@ -28,7 +28,7 @@ class Pool:
                         position = NONE_POSITION
                         target = 0
                     else:
-                        position = line['images_metric'][0]
+                        position = min(line['images_metric'][0], NONE_POSITION)
                         target = line['images_metric'][2] - line['images_metric'][1]
                     self.targets.append(target)
                     self.positions.append(position)
@@ -51,6 +51,7 @@ class Pool:
                     (self.features, np.reshape(self.positions, (-1, 1))),
                     axis=1
                 )
+
             for field in self.fields:
                 self.__dict__[field] = np.array(self.__dict__[field])
 
@@ -83,12 +84,15 @@ class Pool:
         return pools
 
     def train_test_split(self, test_size=0.3):
+        indecies = np.arange(len(self.features))
+        train_indecies, test_indecies = train_test_split(
+            indecies, test_size=test_size, shuffle=True
+        )
         train_fields_dict = {}
         test_fields_dict = {}
         for field in self.fields:
-            train_fields_dict[field], test_fields_dict[field] = train_test_split(
-                self.__dict__[field], test_size=test_size, shuffle=True
-            )
+            train_fields_dict[field] = self.__dict__[field][train_indecies]
+            test_fields_dict[field] = self.__dict__[field][test_indecies]
 
         test_pool, train_pool = Pool(), Pool()
         train_pool.set(*list(train_fields_dict.values()))
