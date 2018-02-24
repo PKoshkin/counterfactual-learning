@@ -20,6 +20,6 @@ def test_regression(model, pool, runs=100):
 
         mask = np.any(predicted_scores > 0, axis=1)
         show_position = np.argmax(predicted_scores, axis=1)
-        positions = show_position * mask + NONE_POSITION * (1 - mask)
+        positions = show_position# * mask + NONE_POSITION * (1 - mask)
         scores.append(metric(positions, test_pool.positions, test_pool.targets, test_pool.probas))
     return scores

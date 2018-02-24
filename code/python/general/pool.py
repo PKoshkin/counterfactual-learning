@@ -25,11 +25,11 @@ class Pool:
                     data = [json_from_string(line) for line in handler]
                 for line in data:
                     if line['images_metric'] is None:
-                        continue
-                    position = line['images_metric'][0]
-                    if position >= NONE_POSITION:
-                        continue
-                    target = line['images_metric'][2] - line['images_metric'][1]
+                        position = NONE_POSITION
+                        target = 0
+                    else:
+                        position = line['images_metric'][0]
+                        target = line['images_metric'][2] - line['images_metric'][1]
                     self.targets.append(target)
                     self.positions.append(position)
                     self.features.append(line['factors'][:self.NUM_FEATURES])
