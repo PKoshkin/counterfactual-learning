@@ -1,6 +1,7 @@
 import numpy as np
 from json import loads as json_from_string
 from sklearn.model_selection import train_test_split
+from constants import POSITION_VARIANTS, NONE_POSITION
 
 
 class PoolError(Exception):
@@ -9,12 +10,10 @@ class PoolError(Exception):
 
 class Pool:
     def __init__(self, *args):
-        self.NONE_POSITION = 11
         self.NUM_FEATURES = 1052
-        self.POSITIONS = np.arange(self.NONE_POSITION)
         self.fields = [
             'features', 'positions', 'probas', 'targets', 'queries', 'prod_positions',
-            'classification_labels', 'features_with_positions', 'positions_variants'
+            'classification_labels', 'features_with_positions', 'features_with_one_hot_positions'
         ]
         for field in self.fields:
             self.__dict__[field] = []
@@ -25,42 +24,38 @@ class Pool:
                 with open(args[0]) as handler:
                     data = [json_from_string(line) for line in handler]
                 for line in data:
-                    target = (
-                        (line['images_metric'][2] - line['images_metric'][1])
-                        if line['images_metric'] is not None else 0
-                    )
-
+                    if line['images_metric'] is None:
+                        continue
+                    position = line['images_metric'][0]
+                    if position >= NONE_POSITION:
+                        continue
+                    target = line['images_metric'][2] - line['images_metric'][1]
+                    self.targets.append(target)
+                    self.positions.append(position)
                     self.features.append(line['factors'][:self.NUM_FEATURES])
                     self.probas.append(line['p'])
                     self.queries.append(list(map(int, line['query'].split(' '))))
                     self.prod_positions.append(int(line['prod_pos']))
-                    self.targets.append(target)
                     self.classification_labels.append(
                         0 if target < 0 else
                         1 if target == 0 else
                         2
                     )
-                    self.positions_variants.append(
-                        0 if target < 0 else
-                        1 if target == 0 else
-                        2
-                    )
-                    if line['images_metric'] is not None:
-                        self.positions.append(
-                            min(int(line['images_metric'][0]), self.NONE_POSITION)
-                        )
-                    else:
-                        self.positions.append(self.NONE_POSITION)
-                        self.classification_labels.append(1)
-                        self.positions_variants.append(3)
 
                 positions_one_hot = np.array([
-                    [0 if position != current_position else 1 for position in self.POSITIONS]
+                    [0 if position != current_position else 1 for position in POSITION_VARIANTS]
                     for current_position in self.positions
                 ])
-                self.features_with_positions = np.concatenate((self.features, positions_one_hot), axis=1)
+                self.features_with_one_hot_positions = np.concatenate((self.features, positions_one_hot), axis=1)
+                self.features_with_positions = np.concatenate(
+                    (self.features, np.reshape(self.positions, (-1, 1))),
+                    axis=1
+                )
             for field in self.fields:
                 self.__dict__[field] = np.array(self.__dict__[field])
+
+    def get_average_target(self, position):
+        return np.mean(self.targets[self.positions == position])
 
     def log_features(self):
         self.features = np.log(1 + np.absolute(self.features))
@@ -70,15 +65,15 @@ class Pool:
             self.__dict__[field] = value
 
     def split_by_position(self):
-        pools = [Pool() for position in self.POSITIONS]
+        pools = [Pool() for position in POSITION_VARIANTS]
 
         for i, position in enumerate(self.positions):
             for field in self.fields:
-                if position != self.NONE_POSITION:
+                if position != NONE_POSITION:
                     pools[position].__dict__[field].append(self.__dict__[field][i])
                 else:
                     continue
-                    for tmp_position in self.POSITIONS:
+                    for tmp_position in POSITION_VARIANTS:
                         pools[tmp_position].__dict__[field].append(self.__dict__[field][i])
 
         for pool in pools:
