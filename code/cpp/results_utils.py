@@ -50,11 +50,13 @@ def _get_batches_num(params):
         raise IncorrectParams([MAX_QUERIES_KEY, INITIAL_SIZE_KEY, BATCH_SIZE_KEY])
 
 
-def _get_name(params):
+def _get_name(params, keys=None):
+    if keys is None:
+        keys = [ALGO_KEY, STRATEGY_KEY]
     try:
-        return params[ALGO_KEY] + " " + params[STRATEGY_KEY]
+        return " ".join([str(params[key]) for key in keys])
     except Exception as e:
-        raise IncorrectParams([ALGO_KEY, STRATEGY_KEY])
+        raise IncorrectParams(keys)
 
 
 def _skip_blank(results_lines, line_ind):
@@ -80,16 +82,18 @@ def read_results(filename):
         line_ind = _skip_blank(results_lines, line_ind)
 
         results[algo_params][-1].append([])
-        while (line_ind < len(results_lines) and results_lines[line_ind] not in [ERROR_LINE, ""]:
+        stop_lines = [START_LINE, ERROR_LINE, ""]
+        while line_ind < len(results_lines) and results_lines[line_ind] not in stop_lines:
             results[algo_params][-1][-1].append(float(results_lines[line_ind]))
             line_ind += 1
-        if line_ind < len(results_lines) and results_lines[line_ind] == ERROR_LINE:
+        if line_ind < len(results_lines) and results_lines[line_ind] in [ERROR_LINE, START_LINE]:
             results[algo_params][-1].pop()
-            line_ind += 1
-
-        curr_resutls = results[algo_params][-1]
-        if len(curr_resutls) > 1 and len(curr_resutls[-1]) != len(curr_resutls[-2]):
-            results[algo_params][-1].pop()
+            if results_lines[line_ind] == ERROR_LINE:
+                line_ind += 1
+        else:
+            curr_resutls = results[algo_params][-1]
+            if len(curr_resutls) > 1 and len(curr_resutls[-1]) != len(curr_resutls[-2]):
+                results[algo_params][-1].pop()
 
         line_ind = _skip_blank(results_lines, line_ind)
 
@@ -108,8 +112,12 @@ def draw_plots(
     results,
     keys=None,
     min_batches_num=2,
-    min_tests_num=5,
-    fontsize=12,
+    min_tests_num=2,
+    fontsize=10,
+    name_keys=None,
+    title="Active learning algorithms' performace",
+    xlabel="Training instances share",
+    ylabel="Relevance",
     *args,
     **kwargs
 ):
@@ -135,13 +143,14 @@ def draw_plots(
             x,
             y,
             yerr=yerr,
-            label=_get_name(algo_params),
+            label=_get_name(algo_params, name_keys),
+            errorevery=len(x) / 10,
             *args, **kwargs,
         )
 
-    plt.title("Active learning algorithms' performace", fontsize=fontsize)
-    plt.xlabel('Training instances share', fontsize=fontsize)
-    plt.ylabel('Reward', fontsize=fontsize)
+    plt.title(title, fontsize=fontsize)
+    plt.xlabel(xlabel, fontsize=fontsize)
+    plt.ylabel(ylabel, fontsize=fontsize)
     plt.legend()
     plt.show()
 

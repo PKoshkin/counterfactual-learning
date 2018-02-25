@@ -15,8 +15,8 @@ int main(int argc, char* argv[]) {
     uint16_t max_labels = 14000;
     uint32_t tests_num = 10;
     uint32_t random_seed = 111;
-    uint16_t initial_size = 3000;
-    uint16_t batch_size = 2000;
+    uint16_t initial_size = 1000;
+    uint16_t batch_size = 500;
 
     Pool pool = get_test_classification_pool("../krkopt.data.txt");
 
