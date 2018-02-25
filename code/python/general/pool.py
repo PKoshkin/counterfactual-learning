@@ -30,8 +30,8 @@ class Pool:
                     else:
                         position = min(line['images_metric'][0], NONE_POSITION)
                         target = line['images_metric'][2] - line['images_metric'][1]
-                    self.targets.append(target)
                     self.positions.append(position)
+                    self.targets.append(target)
                     self.features.append(line['factors'][:self.NUM_FEATURES])
                     self.probas.append(line['p'])
                     self.queries.append(list(map(int, line['query'].split(' '))))
@@ -41,19 +41,22 @@ class Pool:
                         1 if target == 0 else
                         2
                     )
-
-                positions_one_hot = np.array([
-                    [0 if position != current_position else 1 for position in POSITION_VARIANTS]
-                    for current_position in self.positions
-                ])
-                self.features_with_one_hot_positions = np.concatenate((self.features, positions_one_hot), axis=1)
-                self.features_with_positions = np.concatenate(
-                    (self.features, np.reshape(self.positions, (-1, 1))),
-                    axis=1
-                )
+                self.set_features(self.features)
 
             for field in self.fields:
                 self.__dict__[field] = np.array(self.__dict__[field])
+
+    def set_features(self, features):
+        self.features = features
+        positions_one_hot = np.array([
+            [0 if position != current_position else 1 for position in POSITION_VARIANTS]
+            for current_position in self.positions
+        ])
+        self.features_with_one_hot_positions = np.concatenate((self.features, positions_one_hot), axis=1)
+        self.features_with_positions = np.concatenate(
+            (self.features, np.reshape(self.positions, (-1, 1))),
+            axis=1
+        )
 
     def get_average_target(self, position):
         return np.mean(self.targets[self.positions == position])
