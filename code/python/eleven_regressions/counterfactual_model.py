@@ -1,4 +1,7 @@
 import numpy as np
+import sys
+sys.path.append('../general')
+from constants import POSITION_VARIANTS
 
 
 class CounterfactualModelError(Exception):
@@ -6,14 +9,12 @@ class CounterfactualModelError(Exception):
 
 
 class CounterfactualModel:
-    NONE_POSITION = 11
-
     def __init__(self, models):
         self.models = models
 
     def fit(self, train_pools):
         if len(train_pools) != len(self.models):
-            raise CounterfactualModelError('Wrong pools noumber')
+            raise CounterfactualModelError('Wrong pools number')
         for pool, model in zip(train_pools, self.models):
             model.fit(pool.features, pool.targets)
 
@@ -23,7 +24,7 @@ class CounterfactualModel:
             for model in self.models
         ]).T
 
-        return [
-            test_pool.POSITIONS[np.argmax(models_predictions)]
+        return np.array([
+            POSITION_VARIANTS[np.argmax(models_predictions)]
             for models_predictions in predictions
-        ]
+        ])
