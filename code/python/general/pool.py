@@ -28,7 +28,7 @@ class Pool:
                         position = NONE_POSITION
                         target = 0
                     else:
-                        position = min(line['images_metric'][0], NONE_POSITION)
+                        position = int(min(line['images_metric'][0], NONE_POSITION))
                         target = line['images_metric'][2] - line['images_metric'][1]
                     self.positions.append(position)
                     self.targets.append(target)
@@ -73,12 +73,8 @@ class Pool:
 
         for i, position in enumerate(self.positions):
             for field in self.fields:
-                if position != NONE_POSITION:
-                    pools[position].__dict__[field].append(self.__dict__[field][i])
-                else:
-                    continue
-                    for tmp_position in POSITION_VARIANTS:
-                        pools[tmp_position].__dict__[field].append(self.__dict__[field][i])
+                position_variant_index = min(position, len(pools) - 1)
+                pools[position_variant_index].__dict__[field].append(self.__dict__[field][i])
 
         for pool in pools:
             for field in self.fields:
@@ -86,7 +82,7 @@ class Pool:
 
         return pools
 
-    def train_test_split(self, test_size=0.3):
+    def train_test_split(self, test_size=0.3, need_indicies=False):
         indecies = np.arange(len(self.features))
         train_indecies, test_indecies = train_test_split(
             indecies, test_size=test_size, shuffle=True
@@ -101,7 +97,10 @@ class Pool:
         train_pool.set(*list(train_fields_dict.values()))
         test_pool.set(*list(test_fields_dict.values()))
 
-        return train_pool, test_pool
+        if not need_indicies:
+            return train_pool, test_pool
+        else:
+            return train_pool, test_pool, train_indecies, test_indecies
 
     def split_by_queries(self):
         POOLS_NUMBER = 3
@@ -146,3 +145,8 @@ class Pool:
     def filter(self, mask):
         for field in self.fields:
             self.__dict__[field] = self.__dict__[field][mask]
+
+    def copy(self):
+        result = Pool()
+        result.set(*[self.__dict__[field] for field in self.fields])
+        return result
