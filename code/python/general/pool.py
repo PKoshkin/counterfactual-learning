@@ -24,11 +24,10 @@ class Pool:
                 with open(args[0]) as handler:
                     data = [json_from_string(line) for line in handler]
                 for line in data:
+                    position = line['rnd_pos']
                     if line['images_metric'] is None:
-                        position = NONE_POSITION
                         target = 0
                     else:
-                        position = int(min(line['images_metric'][0], NONE_POSITION))
                         target = line['images_metric'][2] - line['images_metric'][1]
                     self.positions.append(position)
                     self.targets.append(target)

@@ -14,3 +14,30 @@ def normed_metric(answers_positions, target_positions, target, target_probs):
     ) / np.sum(
         1 / target_probs * (answers_positions == target_positions)
     )
+
+
+def prod_metric(pool):
+    scores = []
+    for i in range(10):
+        _, test_pool = pool.train_test_split()
+        scores.append(metric(
+            test_pool.prod_positions,
+            test_pool.positions,
+            test_pool.targets,
+            test_pool.probas
+        ))
+    return scores
+
+
+def max_metric(pool):
+    scores = []
+    for i in range(10):
+        _, test_pool = pool.train_test_split()
+        mask = test_pool.targets > 0
+        scores.append(metric(
+            test_pool.positions[mask],
+            test_pool.positions[mask],
+            test_pool.targets[mask],
+            test_pool.probas[mask]
+        ))
+    return scores
