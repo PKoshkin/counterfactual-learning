@@ -1,7 +1,7 @@
 import numpy as np
 from json import loads as json_from_string
 from sklearn.model_selection import train_test_split
-from constants import POSITION_VARIANTS, NONE_POSITION
+from constants import POSITION_VARIANTS
 
 
 class PoolError(Exception):
@@ -149,3 +149,22 @@ class Pool:
         result = Pool()
         result.set(*[self.__dict__[field] for field in self.fields])
         return result
+
+    def shuffle(self, indecies):
+        for field in self.fields:
+            self.__dict__[field] = self.__dict__[field][indecies]
+
+    def random_shuffle(self):
+        self.shuffle(np.random.permutation(len(self.features)))
+
+    def get_uniform_pool(self, size):
+        uniform_probas = (1 / self.probas) / np.sum(1 / self.probas)
+        return self.sample_pool(uniform_probas, size)
+
+    def sample_pool(self, probas, size):
+        new_pool = Pool()
+        indecies = np.random.choice(np.arange(len(self.features)), size, p=probas)
+        for field in self.fields:
+            new_pool.__dict__[field] = self.__dict__[field][indecies]
+
+        return new_pool
