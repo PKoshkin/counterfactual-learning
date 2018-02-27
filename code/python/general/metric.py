@@ -16,6 +16,19 @@ def normed_metric(answers_positions, target_positions, target, target_probs):
     )
 
 
+def get_metric(pool, positions):
+    return metric(positions, pool.positions, pool.targets, pool.probas)
+
+
+def get_benefit(pool, weights=None):
+    if weights is None:
+        return np.mean(pool.targets)
+    else:
+        if len(weights) != len(pool.features):
+            raise Exception("Wrong weights len")
+        return np.mean(pool.targets * weights) / np.sum(weights)
+
+
 def prod_metric(pool):
     scores = []
     for i in range(10):

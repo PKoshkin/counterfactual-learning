@@ -12,8 +12,8 @@ class Pool:
     def __init__(self, *args):
         self.NUM_FEATURES = 1052
         self.fields = [
-            'features', 'positions', 'probas', 'targets', 'queries', 'prod_positions',
-            'classification_labels', 'features_with_positions', 'features_with_one_hot_positions'
+            'features', 'positions', 'probas', 'targets', 'queries', 'users', 'prod_positions',
+            'classification_labels', 'greedy_labels', 'features_with_positions', 'features_with_one_hot_positions'
         ]
         for field in self.fields:
             self.__dict__[field] = []
@@ -33,12 +33,16 @@ class Pool:
                     self.targets.append(target)
                     self.features.append(line['factors'][:self.NUM_FEATURES])
                     self.probas.append(line['p'])
-                    self.queries.append(list(map(int, line['query'].split(' '))))
+                    self.queries.append(tuple(map(int, line['query'].split(' '))))
+                    self.users.append(line['uid'])
                     self.prod_positions.append(int(line['prod_pos']))
                     self.classification_labels.append(
                         0 if target < 0 else
                         1 if target == 0 else
                         2
+                    )
+                    self.greedy_labels.append(
+                        1 if target > 0 else 0
                     )
                 self.set_features(self.features)
 
