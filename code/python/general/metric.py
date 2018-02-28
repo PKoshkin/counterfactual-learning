@@ -26,7 +26,7 @@ def get_benefit(pool, weights=None):
     else:
         if len(weights) != len(pool.features):
             raise Exception("Wrong weights len")
-        return np.mean(pool.targets * weights) / np.sum(weights)
+        return np.mean(pool.targets * weights) / np.mean(weights)
 
 
 def prod_metric(pool):
