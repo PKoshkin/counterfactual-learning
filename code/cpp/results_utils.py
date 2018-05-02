@@ -21,6 +21,13 @@ DEFAULT_TEST_SIZE = 22500
 ERROR_LINE = "error!!!"
 START_LINE = "Algorithm with following features was applied:"
 
+STRATEGY_COLORS = {
+    "uncertainty sampling": 'blue',
+    "random": 'orange',
+    "diversity with 1.000000 share": 'green',
+    "diversity with 0.200000 share": 'green',
+}
+
 
 class IncorrectParams(Exception):
     def __init__(self, keys, *args, **kwargs):
@@ -114,6 +121,7 @@ def draw_plots(
     min_batches_num=2,
     min_tests_num=2,
     fontsize=10,
+    thick_num=None,
     name_keys=None,
     title="Active learning algorithms' performace",
     xlabel="Training instances share",
@@ -127,6 +135,7 @@ def draw_plots(
         metrics = results[algo_params]
         if metrics[-1].shape[0] < min_tests_num or metrics[-1].shape[1] < min_batches_num:
             continue
+        strategy = algo_params[STRATEGY_KEY]
         batch_size = algo_params[BATCH_SIZE_KEY]
         initial_size = algo_params[INITIAL_SIZE_KEY] + batch_size
         max_queries = algo_params[MAX_QUERIES_KEY]
@@ -139,12 +148,19 @@ def draw_plots(
         )) / (train_size + test_size)
         y = metrics[-1].mean(axis=0)
         yerr = metrics[-1].std(axis=0, ddof=1) / metrics[-1].shape[0]**0.5
+
+        if thick_num is None:
+            errorevery = 1
+        else:
+            errorevery = len(x) // thick_num
+
         plt.errorbar(
             x,
             y,
+            color=STRATEGY_COLORS[strategy],
             yerr=yerr,
             label=_get_name(algo_params, name_keys),
-            errorevery=len(x) / 10,
+            errorevery=errorevery,
             *args, **kwargs,
         )
 
