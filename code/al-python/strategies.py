@@ -29,7 +29,10 @@ class PassiveLearningStrategy(BaseStrategy):
         self._params = {}
 
     def get_batch_indexes(self, probs, labeled_pool, unlabeled_pool, batch_size):
-        return np.random.choice(len(unlabeled_pool), size=batch_size, replace=False)
+        if len(unlabeled_pool) < batch_size:
+            return np.arange(len(unlabeled_pool))
+        else:
+            return np.random.choice(len(unlabeled_pool), size=batch_size, replace=False)
 
     @classmethod
     def get_info(cls, params):
@@ -270,7 +273,17 @@ STRATEGIES = {
 }
 
 
+def check_existance(strategy):
+    strategy_parts = strategy.split('-')
+    for strategy_part in strategy_parts:
+        if strategy_part not in STRATEGIES.keys():
+            return False
+
+    return True
+
+
 def _preproc(strategy, params):
+    assert check_existance(strategy), "Unknown strategy: {}".format(strategy)
     if '-' in strategy:
         for name in strategy.split('-'):
             params.setdefault(name, {})

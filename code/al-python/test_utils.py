@@ -1,4 +1,4 @@
-from utils import read_csv, write_to_csv
+from utils import read_csv, write_to_csv, calculate_metric
 
 import numpy as np
 import os
@@ -16,3 +16,21 @@ def test_read_write():
 
     not_match_error = "Source and readed pools have diffenent elements!"
     assert matched_elems == (pool.shape[0] * pool.shape[1]), not_match_error
+
+
+def test_metric():
+    positions = [2, 3, 1, 4, 5, 0]
+    proba = 1.0 / 11
+    big_proba = 100000
+    pool = np.array([
+        [1, proba, 1, 0],
+        [2, proba, 3, 0],
+        [1, proba, 0, 0],
+        [1, proba, 0, 0],
+        [10, big_proba, 5, 0],
+        [1, 1, 0, 1],
+    ], dtype=np.float)
+
+    metric = calculate_metric(positions, pool)
+    print(metric)
+    assert abs(metric - (2 / proba + 10 / big_proba + 1.0 / 1) / 6) < 1e-4

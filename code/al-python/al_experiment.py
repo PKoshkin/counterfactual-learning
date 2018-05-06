@@ -42,9 +42,9 @@ def _run_al_experiment(
     for iteration_ind in xrange(iters_num + 1):
         sys.stderr.write('begin {} iteration\n'.format(iteration_ind))
         classifier = train(labeled_pool, **classifier_params)
-        probs = predict_positions(unlabeled_pool, classifier, return_probs=True)
 
-        if iteration_ind < iter_num:
+        if iteration_ind < iters_num:
+            probs = predict_positions(unlabeled_pool, classifier, return_probs=True)
             indexes = strategy.get_batch_indexes(probs, labeled_pool, unlabeled_pool, batch_size)
             labeled_pool = np.concatenate([labeled_pool, unlabeled_pool[indexes]], axis=0)
             unlabeled_pool = np.delete(unlabeled_pool, indexes, axis=0)
