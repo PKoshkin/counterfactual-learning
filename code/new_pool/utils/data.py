@@ -14,6 +14,24 @@ def make_catboost_file(json_filename, result_filename):
             print(make_catboost_line(json), file=result_handler)
 
 
+def make_catboost_files(json_filename, filename_by_ts):
+    handlers = {
+        timestamp: open(filename_by_ts[timestamp], 'w')
+        for timestamp in filename_by_ts.keys()
+    }
+    with open(json_filename) as json_handler:
+        for line in json_handler:
+            json = json_from_string(line.strip())
+            timestamp = json["ts"]
+            dt = datetime.fromtimestamp(timestamp)
+            day_timestamp = int(datetime(
+                year=dt.year,
+                month=dt.month,
+                day=dt.day
+            ).timestamp())
+            print(make_catboost_line(json), file=handlers[day_timestamp])
+
+
 def check_sorted(json_filename):
     with open(json_filename) as json_handler:
         ts = -1
