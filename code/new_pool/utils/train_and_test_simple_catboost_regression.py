@@ -24,8 +24,8 @@ def get_from_catboost_file(filename, indices, types, splitter='\t'):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("data_folder", type=str)
-    parser.add_argument("out_folder", type=str)
+    parser.add_argument("--data_folder", type=str)
+    parser.add_argument("--out_folder", type=str)
     args = parser.parse_args()
 
     days_number = 16

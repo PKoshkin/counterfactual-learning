@@ -57,8 +57,8 @@ def main():
         1523998800
     ]
     parser = argparse.ArgumentParser()
-    parser.add_argument("json_filename", type=str)
-    parser.add_argument("out_folder", type=str)
+    parser.add_argument("--json_filename", type=str)
+    parser.add_argument("--out_folder", type=str)
     args = parser.parse_args()
     make_catboost_files(args.json_filename, args.out_folder, timestamps)
 
