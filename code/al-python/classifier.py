@@ -31,4 +31,4 @@ def predict_positions(test_pool, classifier, return_probs=False):
     if return_probs:
         return probs
     else:
-        return np.array([POSITIONS[index] for index in np.argmax(probs, axis=1)])
+        return POSITIONS[np.argmax(probs, axis=1)]
