@@ -17,6 +17,7 @@ def _run_al_experiment(
     unlabeled_pool,
     test_pool,
     algo,
+    strategy_name,
     strategy,
     batch_size,
     end_size,
@@ -27,7 +28,7 @@ def _run_al_experiment(
     iters_num = int(ceil((float(end_size - len(labeled_pool))) / batch_size))
     params = {
         "algo": algo,
-        "strategy": strategy.name,
+        "strategy": strategy_name,
         "batch size": batch_size,
         "initial size": len(labeled_pool),
         "max queries": end_size,
@@ -74,6 +75,7 @@ def parse_args():
     parser.add_argument('--end_size', default=-1, type=int)
     parser.add_argument('--strategy_params', type=json.loads, default=None)
     parser.add_argument('--results', required=True)
+    parser.add_argument('--train_steps', type=int)
 
     return parser.parse_args()
 
@@ -97,10 +99,12 @@ def main():
         unlabeled_pool,
         test_pool,
         'pool-based',
+        args.strategy,
         strategy,
         args.batch_size,
         args.end_size,
         verbose=False,
+        iterations=args.train_steps,
     )
     with open(args.results, 'w') as handler:
         handler.write(result)

@@ -62,9 +62,6 @@ class UncertaintySamplingActiveLearningStrategy(BaseActiveLearningStrategy):
     def __init__(self, params):
         self._params = params
 
-    def _diff(self, probs):
-        return probs[:, :self._classes_num] - probs[:, self._classes_num:]
-
     def _get_scores(self, probs, labeled_pool, unlabeled_pool):
         if self._uncertainty_metric == 'max':
             return 1 - np.max(probs, axis=1)
@@ -80,32 +77,11 @@ class UncertaintySamplingActiveLearningStrategy(BaseActiveLearningStrategy):
 
     @classmethod
     def get_info(cls, params):
-        info = {
-            key: value
-            for key, value in params.items()
-            if key not in ['classes_num']
-        }
-        return info
+        return params
 
     @property
     def _uncertainty_metric(self):
         return self._params.get('uncertainty_metric', 'max')
-
-    @property
-    def _delta_addition(self):
-        return self._params.get('delta_addition', 0.1)
-
-    @property
-    def _pos_distance_weight(self):
-        return self._params.get('pos_distance_weight', 0.4)
-
-    @property
-    def _min_pos_weith(self):
-        return self._params.get('min_pos_weith', 0.1 / self._classes_num)
-
-    @property
-    def _classes_num(self):
-        return self._params.get('classes_num', 10)
 
 
 class BaseDensityBasedActiveLearningStrategy(BaseActiveLearningStrategy):
@@ -137,8 +113,9 @@ class BaseDensityBasedActiveLearningStrategy(BaseActiveLearningStrategy):
 
     def _compute_closeness(self, first_pool, second_pool):
         closeness = np.zeros(len(first_pool))
-        reduced_size = int(len(second_pool) * self._share)
-        second_pool = np.random.choice(second_pool, size=reduced_size, replace=True)
+        reduced_size = max(int(len(second_pool) * self._share), 1)
+        second_pool_ind = np.random.choice(len(second_pool), size=reduced_size, replace=False)
+        second_pool = second_pool[second_pool_ind]
 
         for b_start_ind in range(0, len(first_pool), self._batch_size):
             b_end_ind = b_start_ind + self._batch_size
@@ -203,7 +180,7 @@ class DiversityActiveLearningStrategy(BaseDensityBasedActiveLearningStrategy):
 
     def _update_closeness(self, new_unlabeled_pool, new_labeled_pool_part):
         closeness_update = self._compute_closeness(new_unlabeled_pool, new_labeled_pool_part)
-        self._closeness = list(np.maximum(closeness_update, self._closeness))
+        self._closeness = np.maximum(closeness_update, self._closeness)
 
 
 class DensityActiveLearningStrategy(BaseDensityBasedActiveLearningStrategy):
@@ -224,7 +201,7 @@ class DensityActiveLearningStrategy(BaseDensityBasedActiveLearningStrategy):
         new_len = len(new_unlabeled_pool)
         part_len = len(new_labeled_pool_part)
 
-        self._closeness = list((self._closeness * old_len - closeness_update * part_len) / new_len)
+        self._closeness = (self._closeness * old_len - closeness_update * part_len) / new_len
 
     @property
     def _beta(self):
