@@ -44,8 +44,20 @@ class BaseActiveLearningStrategy(BaseStrategy):
         if batch_size >= len(unlabeled_pool):
             return np.arange(len(unlabeled_pool))
 
+        active_batch_size = int(round(batch_size * (1 - self._random_part)))
         scores = self._get_scores(probs, labeled_pool, unlabeled_pool)
-        indexes_to_label = np.argpartition(scores, -batch_size)[-batch_size:]
+        indexes_to_label = np.argpartition(scores, -active_batch_size)[-active_batch_size:]
+        if self._random_part > 0.0:
+            random_batch_size = int(round(batch_size * self._random_part))
+            all_indexes = np.arange(len(unlabeled_pool))
+            not_chosen = np.delete(all_indexes, indexes_to_label)
+            random_indexes_to_label = np.random.choice(
+                not_chosen,
+                size=random_batch_size,
+                replace=False
+            )
+            indexes_to_label = np.concatenate([indexes_to_label, random_indexes_to_label])
+
         self._update_params(probs, labeled_pool, unlabeled_pool, indexes_to_label)
         return indexes_to_label
 
@@ -54,6 +66,13 @@ class BaseActiveLearningStrategy(BaseStrategy):
 
     def _update_params(self, probs, labeled_pool, unlabeled_pool, indexes_to_label):
         raise NotImplementedError()
+
+    @property
+    def _random_part(self):
+        random_part = self._params.get('random_part', 0.0)
+        assert random_part >= 0.0 and random_part < 1.0, 'random_part should be in [0, 1)'
+
+        return random_part
 
 
 class UncertaintySamplingActiveLearningStrategy(BaseActiveLearningStrategy):
@@ -214,6 +233,7 @@ class MixActiveLearningStrategy(BaseActiveLearningStrategy):
         self._strategies = [
             STRATEGIES[strategy_name](strategy_params)
             for strategy_name, strategy_params in self._params.items()
+            if strategy_name in STRATEGIES
         ]
 
     def _get_scores(self, probs, labeled_pool, unlabeled_pool):
