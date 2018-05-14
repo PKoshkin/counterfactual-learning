@@ -66,8 +66,6 @@ def main():
             metric = calculate_metric(predictions, target_positions, targets, probas)
             print(metric, file=metrics_handler)
             print(train_time, file=times_handler)
-            if i > 1:
-                break
 
 
 if __name__ == "__main__":
