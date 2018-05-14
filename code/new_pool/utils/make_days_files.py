@@ -1,6 +1,8 @@
+from __future__ import print_function
 import argparse
 import os
 from datetime import datetime
+import time
 from json import loads as json_from_string
 
 
@@ -10,7 +12,7 @@ def make_catboost_line(json):
 
 
 def make_info_line(json):
-    result_list = [json['p'], json['uid'], list(map(int, json['query'].split()))]
+    result_list = [json['p'], json['uid'], map(int, json['query'].split())]
     return "\t".join(map(str, result_list))
 
 
@@ -27,12 +29,8 @@ def make_catboost_files(json_filename, out_folder, timestamps):
         for line in json_handler:
             json = json_from_string(line.strip())
             timestamp = json["ts"]
-            dt = datetime.fromtimestamp(timestamp)
-            day_timestamp = int(datetime(
-                year=dt.year,
-                month=dt.month,
-                day=dt.day
-            ).timestamp())
+            date = datetime.fromtimestamp(timestamp).date()
+            day_timestamp = int(time.mktime(date.timetuple()))
             print(make_catboost_line(json), file=days_handlers[day_timestamp])
             print(make_info_line(json), file=info_handlers[day_timestamp])
 
@@ -57,8 +55,8 @@ def main():
         1523998800
     ]
     parser = argparse.ArgumentParser()
-    parser.add_argument("--json_filename", type=str)
-    parser.add_argument("--out_folder", type=str)
+    parser.add_argument("--json_filename", type=str, required=True)
+    parser.add_argument("--out_folder", type=str, required=True)
     args = parser.parse_args()
     make_catboost_files(args.json_filename, args.out_folder, timestamps)
 

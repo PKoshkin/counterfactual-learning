@@ -1,3 +1,4 @@
+from __future__ import print_function
 import argparse
 import os
 from time import time
@@ -24,21 +25,21 @@ def get_from_catboost_file(filename, indices, types, splitter='\t'):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_folder", type=str)
-    parser.add_argument("--out_folder", type=str)
+    parser.add_argument("--data_folder", type=str, required=True)
+    parser.add_argument("--out_folder", type=str, required=True)
     args = parser.parse_args()
 
     days_number = 16
 
     pools = [
         Pool(os.path.join(args.data_folder, "day_{}.txt".format(i)))
-        for i in range(days_number)
+        for i in xrange(days_number)
     ]
 
-    models = [CatBoostRegressor() for _ in range(days_number - 1)]
+    models = [CatBoostRegressor() for _ in xrange(days_number - 1)]
     trains, tests = [], []
-    for i in range(1, days_number):
-        trains.append(list(range(i)))
+    for i in xrange(1, days_number):
+        trains.append(range(i))
         tests.append(i)
 
     with open(os.path.join(args.out_folder, "times.txt"), 'w') as times_handler,\
@@ -50,7 +51,7 @@ def main():
             end = time()
             train_time = end - start
             predictions = model.predict(pools[test])
-            predictions = list(map(round, predictions))
+            predictions = map(round, predictions)
 
             target_positions, targets = get_from_catboost_file(
                 os.path.join(args.data_folder, "day_{}.txt".format(i)),
@@ -65,6 +66,8 @@ def main():
             metric = calculate_metric(predictions, target_positions, targets, probas)
             print(metric, file=metrics_handler)
             print(train_time, file=times_handler)
+            if i > 1:
+                break
 
 
 if __name__ == "__main__":
