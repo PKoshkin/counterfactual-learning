@@ -48,7 +48,7 @@ def main():
         for i, (model, train, test) in enumerate(zip(models, trains, tests)):
             start = time()
             for train_index in train:
-                model.fit(pools[train_index], verbose=False)
+                model.fit(pools[train_index], verbose=True)
             end = time()
             train_time = end - start
 
