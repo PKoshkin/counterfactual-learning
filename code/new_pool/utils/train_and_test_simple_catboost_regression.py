@@ -30,6 +30,7 @@ def main():
     args = parser.parse_args()
 
     days_number = 16
+    positions_number = 10
 
     pools = [
         Pool(os.path.join(args.data_folder, "day_{}.txt".format(i)))
@@ -50,8 +51,15 @@ def main():
                 model.fit(pools[train_index], verbose=False)
             end = time()
             train_time = end - start
-            predictions = model.predict(pools[test])
-            predictions = map(round, predictions)
+
+            start = time()
+            predicted_positions = []
+            for feature in pools[test].get_features():
+                positions = np.reshape(np.arange(positions_number), [positions_number, 1])
+                repeated_feature = np.repeat(np.array([feature[1:]]), positions_number, axis=0)
+                features_to_predict = np.concatenate([positions, repeated_feature], axis=1)
+                predictions = model.predict(features_to_predict)
+                predicted_positions.append(np.argmax(predictions))
 
             target_positions, targets = get_from_catboost_file(
                 os.path.join(args.data_folder, "day_{}.txt".format(i)),
@@ -63,9 +71,11 @@ def main():
                 indices=[0],
                 types=[float]
             )[0]
-            metric = calculate_metric(predictions, target_positions, targets, probas)
+            metric = calculate_metric(predicted_positions, target_positions, targets, probas)
+            end = time()
+            predict_time = end - start
             print(metric, file=metrics_handler)
-            print(train_time, file=times_handler)
+            print(train_time, predict_time, file=times_handler)
 
 
 if __name__ == "__main__":
