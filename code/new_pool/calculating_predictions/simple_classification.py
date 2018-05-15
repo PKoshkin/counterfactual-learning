@@ -9,7 +9,7 @@ from constants import DAYS_NUMBER, POSITIONS_NUMBER, NONE_POSITION
 from json_tools import get_features, get_labels
 
 
-def calculate_simple_regression_predictions(model_constructor, data_folder, out_folder):
+def calculate_simple_classification_predictions(model_constructor, data_folder, out_folder):
     """
     model_constructor: regression model. Has fit(x, y) and predict(x) methods.
     data_folder: str. Directory, containing files "day_i.json" where i in range(DAYS_NUMBER).
@@ -42,8 +42,10 @@ def calculate_simple_regression_predictions(model_constructor, data_folder, out_
                 for feature in features[test]:
                     repeated_feature = np.repeat(np.array([feature[1:]]), POSITIONS_NUMBER + 1, axis=0)
                     features_to_predict = np.concatenate([reshaped_positions, repeated_feature], axis=1)
-                    predictions = model.predict(features_to_predict)
-                    print(' '.join(map(str, predictions)), file=res_handler)
+                    probas_predictions = model.predict_proba(features_to_predict)
+                    probas_predictions = ', '.join(map(str, probas_predictions))
+                    print("!!!!!!!!!!!!!!!!!")
+                    print('[' + probas_predictions + ']', file=res_handler)
 
                 end = time.time()
                 predict_time = end - start
