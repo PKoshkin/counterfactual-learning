@@ -45,7 +45,7 @@ def train_and_test_simple_regression(model_constructor, data_folder, out_folder)
         for i, (model, train, test) in enumerate(zip(models, trains, tests)):
             start = time.time()
             for train_index in train:
-                model.fit(features[train_index], labels[train_index], verbose=True)
+                model.fit(features[train_index], labels[train_index])
             end = time.time()
             train_time = end - start
 
