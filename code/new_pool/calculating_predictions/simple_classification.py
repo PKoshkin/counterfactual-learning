@@ -43,9 +43,14 @@ def calculate_simple_classification_predictions(model_constructor, data_folder, 
                     repeated_feature = np.repeat(np.array([feature[1:]]), POSITIONS_NUMBER + 1, axis=0)
                     features_to_predict = np.concatenate([reshaped_positions, repeated_feature], axis=1)
                     probas_predictions = model.predict_proba(features_to_predict)
-                    probas_predictions = ', '.join(map(str, probas_predictions))
-                    print("!!!!!!!!!!!!!!!!!")
-                    print('[' + probas_predictions + ']', file=res_handler)
+                    write_str = ""
+                    for prediction in probas_predictions:
+                        if write_str == "":
+                            write_str += '['
+                        else:
+                            write_str += ' ['
+                        write_str += ', '.join(map(str, prediction)) + ']'
+                    print(write_str, file=res_handler)
 
                 end = time.time()
                 predict_time = end - start

@@ -28,4 +28,4 @@ def get_features(json_filename, add_positions=True):
 
 
 def get_labels(json_filename):
-    return get_from_pool(json_filename, "target")
+    return map(int, get_from_pool(json_filename, "target"))
