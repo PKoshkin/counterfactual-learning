@@ -27,6 +27,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_folder", type=str, required=True)
     parser.add_argument("--out_folder", type=str, required=True)
+    parser.add_argument('--verbose', action='store_true')
     args = parser.parse_args()
 
     days_number = 16
@@ -48,7 +49,7 @@ def main():
         for i, (model, train, test) in enumerate(zip(models, trains, tests)):
             start = time()
             for train_index in train:
-                model.fit(pools[train_index], verbose=True)
+                model.fit(pools[train_index], verbose=args.verbose)
             end = time()
             train_time = end - start
 
