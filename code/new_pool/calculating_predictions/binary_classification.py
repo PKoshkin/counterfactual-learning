@@ -8,7 +8,7 @@ from constants import DAYS_NUMBER
 from json_tools import get_features, get_binary_labels
 
 
-def calculate_binary_classification_predictions(model_constructor, data_folder, out_folder, treshold):
+def calculate_binary_classification_predictions(model_constructor, data_folder, out_folder, threshold):
     """
     model_constructor: regression model. Has fit(x, y) and predict(x) methods.
     data_folder: str. Directory, containing files "day_i.json" where i in range(DAYS_NUMBER).
@@ -17,7 +17,7 @@ def calculate_binary_classification_predictions(model_constructor, data_folder, 
     # features contain positions
     json_filenames = [os.path.join(data_folder, "day_{}.json".format(i)) for i in xrange(DAYS_NUMBER)]
     features = [get_features(json_filename, False) for json_filename in json_filenames]
-    labels = [get_binary_labels(json_filename, treshold) for json_filename in json_filenames]
+    labels = [get_binary_labels(json_filename, threshold) for json_filename in json_filenames]
     model = model_constructor()
 
     with open(os.path.join(out_folder, "times.txt"), 'w') as times_handler:

@@ -13,8 +13,8 @@ class ArgumentException(Exception):
 def calculate_regression(args):
     if args.max_clicks is not None:
         raise ArgumentException("\"max_clicks\" argument is valid only for classification")
-    if args.treshold is not None:
-        raise ArgumentException("\"treshold\" argument is not valid for binary classification")
+    if args.threshold is not None:
+        raise ArgumentException("\"threshold\" argument is not valid for binary classification")
     if args.model.lower() == "catboost":
         model_constructor = lambda: CatBoostRegressor(verbose=args.verbose)
     elif args.model.lower() in ["xgb", "xgboost"]:
@@ -25,8 +25,8 @@ def calculate_regression(args):
 
 
 def calculate_binary_classification(args):
-    if args.treshold is None:
-        raise ArgumentException("\"treshold\" argument is required for binary classification")
+    if args.threshold is None:
+        raise ArgumentException("\"threshold\" argument is required for binary classification")
     if args.max_clicks is not None:
         raise ArgumentException("\"max_clicks\" argument is valid only for classification")
     if args.model.lower() == "catboost":
@@ -38,14 +38,14 @@ def calculate_binary_classification(args):
     calculate_binary_classification_predictions(model_constructor,
                                                 args.data_folder,
                                                 args.out_folder,
-                                                args.treshold)
+                                                args.threshold)
 
 
 def calculate_classification(args):
     if args.max_clicks is None:
         raise ArgumentException("\"max_clicks\" argument is required for classification")
-    if args.treshold is not None:
-        raise ArgumentException("\"treshold\" argument is not valid for binary classification")
+    if args.threshold is not None:
+        raise ArgumentException("\"threshold\" argument is not valid for binary classification")
     if args.model.lower() == "catboost":
         model_constructor = lambda: CatBoostClassifier(verbose=args.verbose,
                                                        loss_function='MultiClass',
@@ -68,7 +68,7 @@ def run():
     parser.add_argument("--model", type=str, required=True, help="catboost of xgboost")
     parser.add_argument("--type", type=str, required=True, help="classification of regression")
     parser.add_argument("--max_clicks", type=int)
-    parser.add_argument("--treshold", type=float)
+    parser.add_argument("--threshold", type=float)
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--fast", action="store_true")
     args = parser.parse_args()
