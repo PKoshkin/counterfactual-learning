@@ -81,7 +81,7 @@ def fast_calculate_simple_classification_predictions(model_constructor, data_fol
             res_filename = '_'.join(map(str, range(i))) + '-' + str(i) + '.txt'
             with open(os.path.join(out_folder, res_filename), 'w') as res_handler:
                 start = time.time()
-                model.fit(features[i - 1], labels[i])
+                model.fit(features[i - 1], labels[i - 1])
                 end = time.time()
                 train_time = end - start
 
