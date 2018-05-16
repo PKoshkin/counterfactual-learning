@@ -2,6 +2,14 @@ import numpy as np
 from json import loads as json_from_string
 
 
+def get_binary_labels(json_filename, trashhold):
+    with open(json_filename) as handler:
+        return np.array([
+            1 if (json_from_string(line)["target"] > trashhold) else 0
+            for line in handler
+        ])
+
+
 def get_from_pool(json_filename, name):
     with open(json_filename) as handler:
         return np.array([
