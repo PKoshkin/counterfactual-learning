@@ -6,10 +6,10 @@ import numpy as np
 
 sys.path.append("../utils")
 from constants import DAYS_NUMBER, POSITIONS_NUMBER, NONE_POSITION
-from json_tools import get_features, get_labels
+from json_tools import get_features, get_classification_labels
 
 
-def calculate_simple_classification_predictions(model_constructor, data_folder, out_folder):
+def calculate_simple_classification_predictions(model_constructor, data_folder, out_folder, max_clicks):
     """
     model_constructor: regression model. Has fit(x, y) and predict(x) methods.
     data_folder: str. Directory, containing files "day_i.json" where i in range(DAYS_NUMBER).
@@ -18,7 +18,7 @@ def calculate_simple_classification_predictions(model_constructor, data_folder, 
     # features contain positions
     json_filenames = [os.path.join(data_folder, "day_{}.json".format(i)) for i in xrange(DAYS_NUMBER)]
     features = [get_features(json_filename, True) for json_filename in json_filenames]
-    labels = [get_labels(json_filename) for json_filename in json_filenames]
+    labels = [get_classification_labels(json_filename, max_clicks) for json_filename in json_filenames]
     models = [model_constructor() for _ in xrange(DAYS_NUMBER - 1)]
     trains, tests = [], []
     for i in xrange(1, DAYS_NUMBER):
@@ -48,9 +48,9 @@ def calculate_simple_classification_predictions(model_constructor, data_folder, 
                         if write_str == "":
                             write_str += '['
                         else:
-                            write_str += ' ['
+                            write_str += ', ['
                         write_str += ', '.join(map(str, prediction)) + ']'
-                    print(write_str, file=res_handler)
+                    print('[' + write_str + ']', file=res_handler)
 
                 end = time.time()
                 predict_time = end - start

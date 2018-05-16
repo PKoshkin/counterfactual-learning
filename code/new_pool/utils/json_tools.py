@@ -10,6 +10,12 @@ def get_from_pool(json_filename, name):
         ])
 
 
+def get_classification_labels(json_filename, max_clicks):
+    # if max_clicks=3 classes are: [0 clicks, 1 click, 2 clicks, 3 clisck, more then 3 clicks]
+    real_clicks = map(int, get_from_pool(json_filename, "target"))
+    return map(lambda x: min(x, max_clicks + 1), real_clicks)
+
+
 def make_feature(json, add_positions):
     if add_positions:
         return [json["pos"]] + json["factors"]
