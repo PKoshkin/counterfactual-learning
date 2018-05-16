@@ -15,8 +15,9 @@ def run():
     parser.add_argument("--out_folder", type=str, required=True)
     parser.add_argument("--model", type=str, required=True, help="catboost of xgboost")
     parser.add_argument("--type", type=str, required=True, help="classification of regression")
-    parser.add_argument("--max_clicks", type=int, required=True)
+    parser.add_argument("--max_clicks", type=int)
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--fast", action="store_true")
     args = parser.parse_args()
 
     if args.type == "regression":
@@ -43,7 +44,8 @@ def run():
         calculate_simple_classification_predictions(model_constructor,
                                                     args.data_folder,
                                                     args.out_folder,
-                                                    args.max_clicks)
+                                                    args.max_clicks,
+                                                    args.fast)
     else:
         raise ArgumentException("Wrong model type \"{}\".".format(args.type))
 
