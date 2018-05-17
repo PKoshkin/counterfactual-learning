@@ -57,8 +57,7 @@ def calculate_classification(args):
     calculate_simple_classification_predictions(model_constructor,
                                                 args.data_folder,
                                                 args.out_folder,
-                                                args.max_clicks,
-                                                args.fast)
+                                                args.max_clicks)
 
 
 def run():
@@ -75,6 +74,8 @@ def run():
 
     if args.model != "catboost":
         raise ArgumentException("Only catboost is supported now!")
+    if not args.fast:
+        raise ArgumentException("Only fast mode is supported now!")
 
     if args.type == "regression":
         calculate_regression(args)

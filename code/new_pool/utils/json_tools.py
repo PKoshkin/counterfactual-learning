@@ -18,6 +18,10 @@ def get_from_pool(json_filename, name):
         ])
 
 
+def get_regression_labels(json_filename):
+    return map(float, get_from_pool(json_filename, "target"))
+
+
 def get_classification_labels(json_filename, max_clicks):
     # if max_clicks=3 classes are: [0 clicks, 1 click, 2 clicks, 3 clisck, more then 3 clicks]
     real_clicks = map(int, get_from_pool(json_filename, "target"))
