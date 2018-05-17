@@ -73,6 +73,9 @@ def run():
     parser.add_argument("--fast", action="store_true")
     args = parser.parse_args()
 
+    if args.model != "catboost":
+        raise ArgumentException("Only catboost is supported now!")
+
     if args.type == "regression":
         calculate_regression(args)
     elif args.type == "classification":

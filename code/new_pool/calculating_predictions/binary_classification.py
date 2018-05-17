@@ -2,6 +2,7 @@ from __future__ import print_function
 import os
 import sys
 import time
+import numpy as np
 
 sys.path.append("../utils")
 from constants import DAYS_NUMBER
@@ -32,6 +33,7 @@ def calculate_binary_classification_predictions(model_constructor, data_folder, 
 
                 start = time.time()
                 predictions = model.predict_proba(features[i])
+                np.save(res_handler, predictions)
                 print(predictions, file=res_handler)
                 end = time.time()
                 predict_time = end - start
