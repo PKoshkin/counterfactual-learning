@@ -1,5 +1,7 @@
 import numpy as np
 from json import loads as json_from_string
+import sys
+sys.path.append("../utils")
 
 
 def get_binary_labels(json_filename, trashhold):
@@ -28,21 +30,30 @@ def get_classification_labels(json_filename, max_clicks):
     return map(lambda x: min(x, max_clicks + 1), real_clicks)
 
 
-def make_feature(json, add_positions):
+def make_feature(json, add_positions, first_feature, last_feature):
     if add_positions:
-        return [json["pos"]] + json["factors"]
+        return [json["pos"]] + json["factors"][first_feature:last_feature]
     else:
-        return json["factors"]
+        return json["factors"][first_feature:last_feature]
 
 
-def get_features(json_filename, add_positions=True):
+def get_features_range(json_filename, first_feature=0, last_feature=-1, add_positions=True):
+    """
+    last_feature is not included
+    """
+    assert first_feature >= 0
+    assert first_feature < last_feature
     assert type(add_positions) == bool
     with open(json_filename) as handler:
         features = []
         for line in handler:
             json = json_from_string(line)
-            features.append(make_feature(json, add_positions))
+            features.append(make_feature(json, add_positions, first_feature, last_feature))
     return np.array(features)
+
+
+def get_features(json_filename, add_positions=True):
+    return get_features_range(json_filename, 0, None, add_positions)
 
 
 def get_labels(json_filename):
