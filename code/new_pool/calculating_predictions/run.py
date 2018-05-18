@@ -95,11 +95,18 @@ def calculate_classification_stacked_on_linear(args):
         model_constructor = lambda: xgb.XGBClassifier(silent=not args.verbose)
     else:
         raise ArgumentException("Wrong model \"{}\".".format(args.model))
+    real_linear_predictions = []
+    for linear_prediction in args.linear_predictions:
+        predictions_folders = [
+            os.path.join(linear_prediction, filename)
+            for filename in os.listdir(linear_prediction)
+        ]
+        real_linear_predictions.extend(predictions_folders)
     calculate_classification_stacked_on_linear_predictions(model_constructor,
                                                            args.data_folder,
                                                            args.out_folder,
                                                            args.max_clicks,
-                                                           args.linear_predictions)
+                                                           real_linear_predictions)
 
 
 def calculate_linear_with_step(args):
