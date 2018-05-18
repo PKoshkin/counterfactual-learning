@@ -26,8 +26,6 @@ def calculate_classification_stacked_on_linear_predictions(model_constructor,
             res_filename = '_'.join(map(str, range(day + 1))) + '-' + str(day + 1) + '.txt'
             linear_predictions_for_days[day].append(os.path.join(results_folder, res_filename))
 
-    print("linear_predictions_for_days: {}".format(linear_predictions_for_days))
-
     json_filenames = [os.path.join(data_folder, "day_{}.json".format(i)) for i in xrange(1, DAYS_NUMBER)]
     # features contain positions
     features = [
