@@ -1,7 +1,7 @@
 import argparse
 import os
 import sys
-from simple_regression import calculate_simple_regression_predictions
+from regression import calculate_regression_predictions
 from simple_classification import calculate_simple_classification_predictions
 from binary_classification import calculate_binary_classification_predictions
 from linear_stacking import calculate_classification_stacked_on_linear_predictions
@@ -31,7 +31,7 @@ def calculate_regression(args):
         model_constructor = lambda: xgb.XGBRegressor(silent=not args.verbose)
     else:
         raise ArgumentException("Wrong model \"{}\".".format(args.model))
-    calculate_simple_regression_predictions(model_constructor, args.data_folder, args.out_folder)
+    calculate_regression_predictions(model_constructor, args.data_folder, args.out_folder)
 
 
 def calculate_binary_classification(args):
@@ -122,7 +122,7 @@ def calculate_linear_with_step(args):
 
 
 def run():
-    types = ["classification", "regression", "binary_classification", "linear_stacking"]
+    types = ["classification", "regression", "binary_classification", "linear", "linear_stacking"]
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_folder", type=str, required=True)
     parser.add_argument("--out_folder", type=str, required=True)

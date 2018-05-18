@@ -9,7 +9,7 @@ from constants import DAYS_NUMBER, POSITIONS_NUMBER, POSITIONS_VARIANTS
 from json_tools import get_features_range, get_regression_labels
 
 
-def calculate_regression_predictions(model_constructor, data_folder, out_folder, first_feature=0, last_feature=None):
+def calculate_regression_predictions(model_constructor, data_folder, out_folder, first_feature=0, last_feature=-1):
     """
     model_constructor: regression model. Has fit(x, y) and predict(x) methods.
     data_folder: str. Directory, containing files "day_i.json" where i in range(DAYS_NUMBER).
@@ -39,7 +39,7 @@ def calculate_regression_predictions(model_constructor, data_folder, out_folder,
                 start = time.time()
                 all_predictions = []
                 for feature in features[i]:
-                    repeated_feature = np.repeat(np.array([feature[1:]]), POSITIONS_NUMBER + 1, axis=0)
+                    repeated_feature = np.repeat(np.array([feature[1:]]), POSITIONS_NUMBER, axis=0)
                     features_to_predict = np.concatenate([reshaped_positions, repeated_feature], axis=1)
                     predictions = model.predict(features_to_predict)
                     all_predictions.append(predictions)

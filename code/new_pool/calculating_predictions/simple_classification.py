@@ -36,7 +36,7 @@ def calculate_simple_classification_predictions(model_constructor, data_folder, 
                 all_predictions = []
                 start = time.time()
                 for feature in features[i]:
-                    repeated_feature = np.repeat(np.array([feature[1:]]), POSITIONS_NUMBER + 1, axis=0)
+                    repeated_feature = np.repeat(np.array([feature[1:]]), POSITIONS_NUMBER, axis=0)
                     features_to_predict = np.concatenate([reshaped_positions, repeated_feature], axis=1)
                     probas_predictions = model.predict_proba(features_to_predict)
                     all_predictions.append(probas_predictions)

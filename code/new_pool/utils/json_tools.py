@@ -60,7 +60,8 @@ def get_features_range(json_filename, first_feature=0, last_feature=-1, add_posi
     If add_positions == True concatinates position as zero feature. Index last_feature is not included.
     """
     assert first_feature >= 0
-    assert first_feature < last_feature
+    if last_feature != -1:
+        assert first_feature < last_feature
     assert type(add_positions) == bool
     with open(json_filename) as handler:
         features = []
@@ -71,7 +72,7 @@ def get_features_range(json_filename, first_feature=0, last_feature=-1, add_posi
 
 
 def get_features(json_filename, add_positions=True):
-    return get_features_range(json_filename, 0, None, add_positions)
+    return get_features_range(json_filename, 0, -1, add_positions)
 
 
 def get_labels(json_filename):
