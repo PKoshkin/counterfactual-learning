@@ -5,7 +5,7 @@ import time
 import numpy as np
 
 sys.path.append("../utils")
-from constants import DAYS_NUMBER, POSITIONS_NUMBER, NONE_POSITION
+from constants import DAYS_NUMBER, POSITIONS_NUMBER, POSITIONS_VARIANTS
 from json_tools import get_features_range, get_regression_labels
 
 
@@ -24,8 +24,7 @@ def calculate_regression_predictions(model_constructor, data_folder, out_folder,
     labels = [get_regression_labels(json_filename) for json_filename in json_filenames]
     model = model_constructor()
 
-    possible_positions = range(POSITIONS_NUMBER) + [NONE_POSITION]
-    reshaped_positions = np.reshape(np.array(possible_positions), [-1, 1])
+    reshaped_positions = np.reshape(np.array(POSITIONS_VARIANTS), [-1, 1])
 
     with open(os.path.join(out_folder, "times.txt"), 'w') as times_handler:
         for i in range(1, DAYS_NUMBER):

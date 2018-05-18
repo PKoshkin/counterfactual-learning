@@ -4,6 +4,7 @@ import sys
 from simple_regression import calculate_simple_regression_predictions
 from simple_classification import calculate_simple_classification_predictions
 from binary_classification import calculate_binary_classification_predictions
+from linear_stacking import calculate_classification_stacked_on_linear_predictions
 import xgboost as xgb
 from catboost import CatBoostRegressor, CatBoostClassifier
 from linear import calculate_linear
@@ -19,9 +20,11 @@ def calculate_regression(args):
     if args.model != "catboost":
         raise ArgumentException("Only catboost is supported now!")
     if args.max_clicks is not None:
-        raise ArgumentException("\"max_clicks\" argument is valid only for classification")
+        raise ArgumentException("\"max_clicks\" argument is valid only for regression")
     if args.threshold is not None:
-        raise ArgumentException("\"threshold\" argument is not valid for binary classification")
+        raise ArgumentException("\"threshold\" argument is not valid for binary regression")
+    if args.linear_predictions is not None:
+        raise ArgumentException("\"linear_predictions\" argument is not valid for regression")
     if args.model.lower() == "catboost":
         model_constructor = lambda: CatBoostRegressor(verbose=args.verbose)
     elif args.model.lower() in ["xgb", "xgboost"]:
@@ -37,7 +40,9 @@ def calculate_binary_classification(args):
     if args.threshold is None:
         raise ArgumentException("\"threshold\" argument is required for binary classification")
     if args.max_clicks is not None:
-        raise ArgumentException("\"max_clicks\" argument is valid only for classification")
+        raise ArgumentException("\"max_clicks\" argument is valid only for binary classification")
+    if args.linear_predictions is not None:
+        raise ArgumentException("\"linear_predictions\" argument is not valid for binary classification")
     if args.model.lower() == "catboost":
         model_constructor = lambda: CatBoostClassifier(verbose=args.verbose)
     elif args.model.lower() in ["xgb", "xgboost"]:
@@ -56,7 +61,9 @@ def calculate_classification(args):
     if args.max_clicks is None:
         raise ArgumentException("\"max_clicks\" argument is required for classification")
     if args.threshold is not None:
-        raise ArgumentException("\"threshold\" argument is not valid for binary classification")
+        raise ArgumentException("\"threshold\" argument is not valid for classification")
+    if args.linear_predictions is not None:
+        raise ArgumentException("\"linear_predictions\" argument is not valid for classification")
     if args.model.lower() == "catboost":
         model_constructor = lambda: CatBoostClassifier(verbose=args.verbose,
                                                        loss_function='MultiClass',
@@ -71,11 +78,37 @@ def calculate_classification(args):
                                                 args.max_clicks)
 
 
+def calculate_classification_stacked_on_linear(args):
+    if args.model != "catboost":
+        raise ArgumentException("Only catboost is supported now!")
+    if args.max_clicks is None:
+        raise ArgumentException("\"max_clicks\" argument is required for linear_stacking")
+    if args.linear_predictions is None:
+        raise ArgumentException("\"linear_predictions\" argument is required for linear_stacking")
+    if args.threshold is not None:
+        raise ArgumentException("\"threshold\" argument is not valid for linear_stacking")
+    if args.model.lower() == "catboost":
+        model_constructor = lambda: CatBoostClassifier(verbose=args.verbose,
+                                                       loss_function='MultiClass',
+                                                       classes_count=args.max_clicks + 2)
+    elif args.model.lower() in ["xgb", "xgboost"]:
+        model_constructor = lambda: xgb.XGBClassifier(silent=not args.verbose)
+    else:
+        raise ArgumentException("Wrong model \"{}\".".format(args.model))
+    calculate_classification_stacked_on_linear_predictions(model_constructor,
+                                                           args.data_folder,
+                                                           args.out_folder,
+                                                           args.max_clicks,
+                                                           args.linear_predictions)
+
+
 def calculate_linear_with_step(args):
     if args.max_clicks is not None:
         raise ArgumentException("\"max_clicks\" argument is valid only for linear")
     if args.threshold is not None:
         raise ArgumentException("\"threshold\" argument is not valid for linear")
+    if args.linear_predictions is not None:
+        raise ArgumentException("\"linear_predictions\" argument is not valid for linear")
     if args.step is None:
         raise ArgumentException("\"step\" argument is required for lenear")
     first_feature = 0
@@ -89,11 +122,13 @@ def calculate_linear_with_step(args):
 
 
 def run():
+    types = ["classification", "regression", "binary_classification", "linear_stacking"]
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_folder", type=str, required=True)
     parser.add_argument("--out_folder", type=str, required=True)
     parser.add_argument("--model", type=str, required=True, help="catboost of xgboost")
-    parser.add_argument("--type", type=str, required=True, help="classification of regression")
+    parser.add_argument("--type", type=str, required=True, help="str in [{}]".format(", ".join(types)))
+    parser.add_argument("--linear_predictions", type=str, nargs='*', help="list of folders with linear regression predictions")
     parser.add_argument("--max_clicks", type=int)
     parser.add_argument("--threshold", type=float)
     parser.add_argument("--step", type=int)
@@ -112,6 +147,8 @@ def run():
         calculate_binary_classification(args)
     elif args.type == "linear":
         calculate_linear_with_step(args)
+    elif args.type == "linear_stacking":
+        calculate_classification_stacked_on_linear(args)
     else:
         raise ArgumentException("Wrong model type \"{}\".".format(args.type))
 

@@ -37,9 +37,27 @@ def make_feature(json, add_positions, first_feature, last_feature):
         return json["factors"][first_feature:last_feature]
 
 
+def get_linear_stacked_features(json_filename, results_list, add_positions=True):
+    """
+    results_list: list of strings - filenames of files with linear models predictions
+    """
+    results = [np.load(filename) for filename in results_list]
+    with open(json_filename) as handler:
+        features = []
+        for i, line in enumerate(handler):
+            json = json_from_string(line)
+            feature = make_feature(json, add_positions, 0, -1)
+            for result in results:
+                # take zero prediction (pos=0) to ignore position
+                feature.append(result[i][0])
+            features.append(feature)
+    return np.array(features)
+
+
 def get_features_range(json_filename, first_feature=0, last_feature=-1, add_positions=True):
     """
-    last_feature is not included
+    Takes features from json_filename with indices from first_feature to last_feature and.
+    If add_positions == True concatinates position as zero feature. Index last_feature is not included.
     """
     assert first_feature >= 0
     assert first_feature < last_feature
