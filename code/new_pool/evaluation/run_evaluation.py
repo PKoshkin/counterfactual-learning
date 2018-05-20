@@ -1,10 +1,18 @@
 import argparse
-from evaluate_regression import evaluate_regression
-from evaluate_classification import evaluate_classification
+import numpy as np
+from evaluate import evaluate
 
 
 class ArgumentException(Exception):
     pass
+
+
+def argmax_positions_by_predictions(predictions):
+    return np.argmax(predictions, axis=-1)
+
+
+def double_argmax_positions_by_predictions(predictions):
+    return np.argmax(np.argmax(predictions, axis=-1), axis=-1)
 
 
 def main():
@@ -16,9 +24,9 @@ def main():
     parser.add_argument("--type", type=str, required=True, help="str in [{}]".format(", ".join(types)))
     args = parser.parse_args()
     if args.type == "evaluate_regression":
-        evaluate_regression(args.predictions_folder, args.data_folder, args.out_folder)
+        evaluate(args.predictions_folder, args.data_folder, args.out_folder, argmax_positions_by_predictions)
     elif args.type == "evaluate_classification":
-        evaluate_classification(args.predictions_folder, args.data_folder, args.out_folder)
+        evaluate(args.predictions_folder, args.data_folder, args.out_folder, double_argmax_positions_by_predictions)
     else:
         raise ArgumentException("Wrong type \"{}\"".format(args.type))
 
