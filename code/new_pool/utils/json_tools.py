@@ -12,10 +12,10 @@ def get_binary_labels(json_filename, trashhold):
         ])
 
 
-def get_from_pool(json_filename, name):
+def get_from_pool(json_filename, name, constructor=float):
     with open(json_filename) as handler:
         return np.array([
-            json_from_string(line)[name]
+            constructor(json_from_string(line)[name])
             for line in handler
         ])
 
