@@ -49,9 +49,9 @@ def main():
     types = ["argmax_regression",
              "weighted_regression",
              "argmax_classification",
-             "exprect_weighted_classification",
+             "expect_weighted_classification",
              "argmax_weighted_classification",
-             "exprect_argmax_classification"]
+             "expect_argmax_classification"]
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_folder", type=str, required=True)
     parser.add_argument("--predictions_folder", type=str, required=True)
@@ -64,11 +64,11 @@ def main():
         evaluate(args.predictions_folder, args.data_folder, args.out_folder, double_argmax_positions)
     elif args.type == "weighted_regression":
         evaluate(args.predictions_folder, args.data_folder, args.out_folder, weighted_positions)
-    elif args.type == "exprect_weighted_classification":
+    elif args.type == "expect_weighted_classification":
         evaluate(args.predictions_folder, args.data_folder, args.out_folder, expect_weighted_positions)
     elif args.type == "argmax_weighted_classification":
         evaluate(args.predictions_folder, args.data_folder, args.out_folder, argmax_weighted_positions)
-    elif args.type == "exprect_argmax_classification":
+    elif args.type == "expect_argmax_classification":
         evaluate(args.predictions_folder, args.data_folder, args.out_folder, expect_argmax_positions)
     else:
         raise ArgumentException("Wrong type \"{}\"".format(args.type))
