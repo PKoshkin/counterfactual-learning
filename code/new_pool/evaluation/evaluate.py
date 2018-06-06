@@ -27,4 +27,5 @@ def evaluate(predictions_folder, data_folder, out_folder, positions_by_predictio
             targets = get_from_pool(data_filename, "target", int)
 
             metric = calculate_metric(predicted_positions, target_positions, targets, probs)
-            print(metric, file=handler)
+            counter = len(target_positions[target_positions == predicted_positions])
+            print(metric, counter, file=handler)
