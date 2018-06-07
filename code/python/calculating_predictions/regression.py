@@ -5,7 +5,7 @@ import time
 import numpy as np
 
 sys.path.append("../utils")
-from constants import DAYS_NUMBER, POSITIONS_NUMBER, POSITIONS_VARIANTS
+from constants import DAYS_NUMBER, POSITIONS_VARIANTS
 from json_tools import get_features_range, get_regression_labels
 from pool_iterator import pool_iterator
 
@@ -16,6 +16,7 @@ def calculate_regression_predictions(model_constructor, data_folder, out_folder,
     data_folder: str. Directory, containing files "day_i.json" where i in range(DAYS_NUMBER).
     out_folder: str. Directory, to save results. DAYS_NUMBER - 1 files will be created.
     """
+
     # features contain positions
     json_filenames = [os.path.join(data_folder, "day_{}.json".format(i)) for i in xrange(DAYS_NUMBER)]
     features = [
@@ -40,7 +41,7 @@ def calculate_regression_predictions(model_constructor, data_folder, out_folder,
                 start = time.time()
                 all_predictions = []
                 for feature in features[i]:
-                    repeated_feature = np.repeat(np.array([feature[1:]]), POSITIONS_NUMBER, axis=0)
+                    repeated_feature = np.repeat(np.array([feature[1:]]), len(POSITIONS_VARIANTS), axis=0)
                     features_to_predict = np.concatenate([reshaped_positions, repeated_feature], axis=1)
                     predictions = model.predict(features_to_predict)
                     all_predictions.append(predictions)
