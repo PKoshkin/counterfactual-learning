@@ -5,14 +5,15 @@ from datetime import datetime
 import time
 import random
 from pool_iterator import pool_iterator
+from constants import TIMESTAMPS
 from json import dumps
 
 
-def make_days_jsons(pool_iterator, skip_prob, out_folder, timestamps, seed):
+def make_days_jsons(pool_iterator, skip_prob, out_folder, seed):
     random.seed(seed)
     handlers = {
         timestamp: open(os.path.join(out_folder, "day_{}.json".format(i)), 'w')
-        for i, timestamp in enumerate(timestamps)
+        for i, timestamp in enumerate(TIMESTAMPS)
     }
     # read pool by pool_iterator
     for item in pool_iterator():
@@ -25,15 +26,6 @@ def make_days_jsons(pool_iterator, skip_prob, out_folder, timestamps, seed):
 
 
 def main():
-    timestamps = [
-        1527541200,
-        1527627600,
-        1527714000,
-        1527800400,
-        1527886800,
-        1527973200,
-        1528059600,
-    ]
     parser = argparse.ArgumentParser()
     parser.add_argument("--pool_path", required=True)
     parser.add_argument("--out_folder", type=str, required=True)
@@ -45,7 +37,6 @@ def main():
         lambda: pool_iterator(args.pool_path),
         args.skip_prob,
         args.out_folder,
-        timestamps,
         args.seed
     )
 
