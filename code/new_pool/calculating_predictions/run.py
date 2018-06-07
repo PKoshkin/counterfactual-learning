@@ -5,7 +5,6 @@ from regression import calculate_regression_predictions
 from simple_classification import calculate_simple_classification_predictions
 from binary_classification import calculate_binary_classification_predictions
 from linear_stacking import calculate_classification_stacked_on_linear_predictions
-import xgboost as xgb
 from catboost import CatBoostRegressor, CatBoostClassifier
 from linear import calculate_linear
 sys.path.append("../utils")
@@ -27,8 +26,6 @@ def calculate_regression(args):
         raise ArgumentException("\"linear_predictions\" argument is not valid for regression")
     if args.model.lower() == "catboost":
         model_constructor = lambda: CatBoostRegressor(verbose=args.verbose)
-    elif args.model.lower() in ["xgb", "xgboost"]:
-        model_constructor = lambda: xgb.XGBRegressor(silent=not args.verbose)
     else:
         raise ArgumentException("Wrong model \"{}\".".format(args.model))
     calculate_regression_predictions(model_constructor, args.data_folder, args.out_folder)
@@ -45,8 +42,6 @@ def calculate_binary_classification(args):
         raise ArgumentException("\"linear_predictions\" argument is not valid for binary classification")
     if args.model.lower() == "catboost":
         model_constructor = lambda: CatBoostClassifier(verbose=args.verbose)
-    elif args.model.lower() in ["xgb", "xgboost"]:
-        model_constructor = lambda: xgb.XGBClassifier(silent=not args.verbose)
     else:
         raise ArgumentException("Wrong model \"{}\".".format(args.model))
     calculate_binary_classification_predictions(model_constructor,
@@ -68,8 +63,6 @@ def calculate_classification(args):
         model_constructor = lambda: CatBoostClassifier(verbose=args.verbose,
                                                        loss_function='MultiClass',
                                                        classes_count=args.max_clicks + 2)
-    elif args.model.lower() in ["xgb", "xgboost"]:
-        model_constructor = lambda: xgb.XGBClassifier(silent=not args.verbose)
     else:
         raise ArgumentException("Wrong model \"{}\".".format(args.model))
     calculate_simple_classification_predictions(model_constructor,
@@ -91,8 +84,6 @@ def calculate_classification_stacked_on_linear(args):
         model_constructor = lambda: CatBoostClassifier(verbose=args.verbose,
                                                        loss_function='MultiClass',
                                                        classes_count=args.max_clicks + 2)
-    elif args.model.lower() in ["xgb", "xgboost"]:
-        model_constructor = lambda: xgb.XGBClassifier(silent=not args.verbose)
     else:
         raise ArgumentException("Wrong model \"{}\".".format(args.model))
     real_linear_predictions = []
@@ -133,7 +124,7 @@ def run():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_folder", type=str, required=True)
     parser.add_argument("--out_folder", type=str, required=True)
-    parser.add_argument("--model", type=str, required=True, help="catboost of xgboost")
+    parser.add_argument("--model", type=str, required=True, help="catboost")
     parser.add_argument("--type", type=str, required=True, help="str in [{}]".format(", ".join(types)))
     parser.add_argument("--linear_predictions", type=str, nargs='*', help="list of folders with linear regression predictions")
     parser.add_argument("--max_clicks", type=int)
