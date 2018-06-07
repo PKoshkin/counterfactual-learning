@@ -8,7 +8,7 @@ import numpy as np
 from math import ceil
 
 from classifier import train, predict_positions
-from utils import write_to_csv, read_csv, calculate_metric
+from utils import write_to_csv, read_csv, calculate_metric, log
 from strategies import get_strategy
 
 
@@ -41,7 +41,8 @@ def _run_al_experiment(
     result += '\n\n'
 
     for iteration_ind in xrange(iters_num + 1):
-        sys.stderr.write('begin {} iteration\n'.format(iteration_ind))
+
+        log('begin {} iteration\n'.format(iteration_ind))
         classifier = train(labeled_pool, **classifier_params)
 
         if iteration_ind < iters_num:

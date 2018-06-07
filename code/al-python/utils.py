@@ -2,9 +2,15 @@
 
 import pandas as pd
 import numpy as np
+import time
+import sys
 
 
 POSITIONS = np.array(range(10) + [100])
+
+
+def log(message):
+    sys.stderr.write("[{:28} LOG] {}".format(time.ctime(), message))
 
 
 def read_csv(path):
