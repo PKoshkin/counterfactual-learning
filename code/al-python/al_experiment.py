@@ -24,7 +24,7 @@ def _run_al_experiment(
     **classifier_params
 ):
     if end_size == -1:
-        end_size = len(unlabeled_pool)
+        end_size = len(unlabeled_pool) + len(labeled_pool)
     iters_num = int(ceil((float(end_size - len(labeled_pool))) / batch_size))
     params = {
         "algo": algo,
@@ -73,7 +73,7 @@ def parse_args():
     parser.add_argument('--initial_size', required=True, type=int)
     parser.add_argument('--batch_size', required=True, type=int)
     parser.add_argument('--end_size', default=-1, type=int)
-    parser.add_argument('--strategy_params', type=json.loads, default=None)
+    parser.add_argument('--strategy_params', type=json.loads, default={})
     parser.add_argument('--results', required=True)
     parser.add_argument('--train_steps', type=int)
 
@@ -89,8 +89,6 @@ def main():
         args.random_seed,
         args.initial_size
     )
-    if args.strategy_params is None:
-        args.strategy_params = {}
 
     strategy = get_strategy(args.strategy, args.strategy_params)
 

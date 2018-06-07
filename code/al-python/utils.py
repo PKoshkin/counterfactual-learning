@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 
-POSITIONS = np.arange(10)
+POSITIONS = np.array(range(10) + [100])
 
 
 def read_csv(path):

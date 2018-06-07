@@ -123,7 +123,7 @@ class PositionRelevanceActiveLearningStragety(ProbaBasedActiveLearningStrategy):
         return self._params.get('delta_addition', 0.1)
 
 
-class UncertaintySamplingActiveLearningStrategy(BaseActiveLearningStrategy):
+class UncertaintySamplingActiveLearningStrategy(ProbaBasedActiveLearningStrategy):
     name = 'US'
 
     def _get_scores(self, probs, labeled_pool, unlabeled_pool):
