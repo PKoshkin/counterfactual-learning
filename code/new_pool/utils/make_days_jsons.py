@@ -5,6 +5,7 @@ from datetime import datetime
 import time
 import random
 from json import loads as json_from_string, dumps
+from pool_iterator import pool_iterator
 
 
 def make_days_jsons(pool_iterator, skip_prob, out_folder, timestamps, debug):
@@ -24,7 +25,7 @@ def make_days_jsons(pool_iterator, skip_prob, out_folder, timestamps, debug):
 def main():
     timestamps = [
         1527541200,
-        1527627600
+        1527627600,
         1527714000,
         1527800400,
         1527886800,
@@ -37,11 +38,6 @@ def main():
     parser.add_argument("--skip_prob", type=float, required=True)
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
-
-    def pool_iterator():
-        with open(args.pool_path) as handler:
-            for line in handler:
-                yield json_from_string(line.strip())
 
     make_days_jsons(pool_iterator, args.skip_prob, args.out_folder, timestamps, args.debug)
 
