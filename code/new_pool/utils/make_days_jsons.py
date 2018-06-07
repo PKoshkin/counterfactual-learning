@@ -8,7 +8,8 @@ from pool_iterator import pool_iterator
 from json import dumps
 
 
-def make_days_jsons(pool_iterator, skip_prob, out_folder, timestamps, debug):
+def make_days_jsons(pool_iterator, skip_prob, out_folder, timestamps, seed):
+    random.seed(seed)
     handlers = {
         timestamp: open(os.path.join(out_folder, "day_{}.json".format(i)), 'w')
         for i, timestamp in enumerate(timestamps)
@@ -37,10 +38,16 @@ def main():
     parser.add_argument("--pool_path", required=True)
     parser.add_argument("--out_folder", type=str, required=True)
     parser.add_argument("--skip_prob", type=float, required=True)
-    parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--seed", type=int, default=111)
     args = parser.parse_args()
 
-    make_days_jsons(lambda: pool_iterator(args.pool_path), args.skip_prob, args.out_folder, timestamps, args.debug)
+    make_days_jsons(
+        lambda: pool_iterator(args.pool_path),
+        args.skip_prob,
+        args.out_folder,
+        timestamps,
+        args.seed
+    )
 
 
 if __name__ == "__main__":
