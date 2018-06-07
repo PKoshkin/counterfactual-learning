@@ -3,47 +3,52 @@ import argparse
 import os
 from datetime import datetime
 import time
+import random
 from json import loads as json_from_string, dumps
 
 
-def make_days_jsons(json_filename, out_folder, timestamps):
+def make_days_jsons(pool_path, skip_prob, out_folder, timestamps, debug):
     handlers = {
         timestamp: open(os.path.join(out_folder, "day_{}.json".format(i)), 'w')
         for i, timestamp in enumerate(timestamps)
     }
-    with open(json_filename) as json_handler:
-        for line in json_handler:
-            json = json_from_string(line.strip())
-            timestamp = json["ts"]
+    # read pool by pool_path
+        if random.random() > skip_prob:
+            timestamp = int(item["ts"])
             date = datetime.fromtimestamp(timestamp).date()
             day_timestamp = int(time.mktime(date.timetuple()))
-            print(dumps(json), file=handlers[day_timestamp])
+            print(dumps(item), file=handlers[day_timestamp])
+    if debug:
+        i = 5
+        length = len([
+            line for line in handlers[timestamps[i]]
+        ])
+        for pos in range(10) + [100]:
+            probs = sum([
+                1 / float(json_from_string(line.strip())['p'])
+                for line in handlers[timestamps[i]]
+                if json_from_string(line.strip())['pos'] == pos
+            ])
+            print("pos={}, sum(1/p)={}, len={}", pos, probs, length)
 
 
 def main():
     timestamps = [
-        1522702800,
-        1522789200,
-        1522875600,
-        1522962000,
-        1523048400,
-        1523134800,
-        1523221200,
-        1523307600,
-        1523394000,
-        1523480400,
-        1523566800,
-        1523653200,
-        1523739600,
-        1523826000,
-        1523912400,
-        1523998800
+        1527541200,
+        1527714000,
+        1527714000,
+        1527800400,
+        1527886800,
+        1527973200,
+        1528059600,
     ]
     parser = argparse.ArgumentParser()
-    parser.add_argument("--json_filename", type=str, required=True)
+    parser.add_argument("--pool_path", required=True)
     parser.add_argument("--out_folder", type=str, required=True)
+    parser.add_argument("--skip_prob", type=float, required=True)
+    parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
-    make_days_jsons(args.json_filename, args.out_folder, timestamps)
+    make_days_jsons(args.pool_path, args.skip_prob, args.out_folder, timestamps, args.debug)
 
 
 if __name__ == "__main__":
