@@ -7,6 +7,7 @@ import numpy as np
 sys.path.append("../utils")
 from constants import DAYS_NUMBER
 from json_tools import get_features, get_binary_labels
+from pool_iterator import pool_iterator
 
 
 def calculate_binary_classification_predictions(model_constructor, data_folder, out_folder, threshold):
@@ -17,8 +18,8 @@ def calculate_binary_classification_predictions(model_constructor, data_folder, 
     """
     # features contain positions
     json_filenames = [os.path.join(data_folder, "day_{}.json".format(i)) for i in xrange(DAYS_NUMBER)]
-    features = [get_features(json_filename, False) for json_filename in json_filenames]
-    labels = [get_binary_labels(json_filename, threshold) for json_filename in json_filenames]
+    features = [get_features(pool_iterator(json_filename), False) for json_filename in json_filenames]
+    labels = [get_binary_labels(pool_iterator(json_filename), threshold) for json_filename in json_filenames]
     model = model_constructor()
 
     with open(os.path.join(out_folder, "times.txt"), 'w') as times_handler:

@@ -7,6 +7,7 @@ import numpy as np
 sys.path.append("../utils")
 from constants import DAYS_NUMBER, POSITIONS_NUMBER, POSITIONS_VARIANTS
 from json_tools import get_features, get_classification_labels
+from pool_iterator import pool_iterator
 
 
 def calculate_simple_classification_predictions(model_constructor, data_folder, out_folder, max_clicks):
@@ -17,8 +18,8 @@ def calculate_simple_classification_predictions(model_constructor, data_folder, 
     """
     # features contain positions
     json_filenames = [os.path.join(data_folder, "day_{}.json".format(i)) for i in xrange(DAYS_NUMBER)]
-    features = [get_features(json_filename, True) for json_filename in json_filenames]
-    labels = [get_classification_labels(json_filename, max_clicks) for json_filename in json_filenames]
+    features = [get_features(pool_iterator(json_filename), True) for json_filename in json_filenames]
+    labels = [get_classification_labels(pool_iterator(json_filename), max_clicks) for json_filename in json_filenames]
     model = model_constructor()
 
     reshaped_positions = np.reshape(np.array(POSITIONS_VARIANTS), [-1, 1])
