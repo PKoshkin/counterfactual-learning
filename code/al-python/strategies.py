@@ -5,6 +5,8 @@ import pandas as pd
 from math import ceil
 import sys
 
+from utils import get_features
+
 
 class BaseStrategy(object):
     def __init__(self, params):
@@ -29,10 +31,10 @@ class PassiveLearningStrategy(BaseStrategy):
         self._params = {}
 
     def get_batch_indexes(self, probs, labeled_pool, unlabeled_pool, batch_size):
-        if len(unlabeled_pool) < batch_size:
-            return np.arange(len(unlabeled_pool))
-        else:
+        if batch_size < len(unlabeled_pool):
             return np.random.choice(len(unlabeled_pool), size=batch_size, replace=False)
+        else:
+            return np.arange(len(unlabeled_pool))
 
     @classmethod
     def get_info(cls, params):
@@ -75,11 +77,54 @@ class BaseActiveLearningStrategy(BaseStrategy):
         return random_part
 
 
-class UncertaintySamplingActiveLearningStrategy(BaseActiveLearningStrategy):
-    name = 'US'
+class ProbaBasedActiveLearningStrategy(BaseActiveLearningStrategy):
 
     def __init__(self, params):
         self._params = params
+
+    def _update_params(self, probs, labeled_pool, unlabeled_pool, indexes_to_label):
+        pass
+
+    def _preprocess_pools(self, labeled_pool, unlabeled_pool):
+        return labeled_pool, unlabeled_pool
+
+    @classmethod
+    def get_info(cls, params):
+        info = {
+            key: value
+            for key, value in params.items()
+            if key not in ['classes_num']
+        }
+        return info
+
+    @property
+    def _classes_num(self):
+        return self._params.get('classes_num', 11)
+
+
+class PositionRelevanceActiveLearningStragety(ProbaBasedActiveLearningStrategy):
+    name = 'PR'
+
+    def _get_scores(self, probs, labeled_pool, unlabeled_pool):
+        if self._relevance_metric == 'delta_max':
+            max_values = np.max(probs, axis=1)
+            rnd_values = probs[
+                np.arange(len(probs)), unlabeled_pool[:, 1].astype(np.int) % self._classes_num
+            ]
+            delta = max_values - rnd_values
+            return 1.0 / (self._delta_addition + delta)
+
+    @property
+    def _relevance_metric(self):
+        return self._params.get('relevance_metric', 'delta_max')
+
+    @property
+    def _delta_addition(self):
+        return self._params.get('delta_addition', 0.1)
+
+
+class UncertaintySamplingActiveLearningStrategy(BaseActiveLearningStrategy):
+    name = 'US'
 
     def _get_scores(self, probs, labeled_pool, unlabeled_pool):
         if self._uncertainty_metric == 'max':
@@ -88,11 +133,22 @@ class UncertaintySamplingActiveLearningStrategy(BaseActiveLearningStrategy):
         elif self._uncertainty_metric == 'gini':
             return 1 - np.sum(probs * probs, axis=1)
 
+        elif self._uncertainty_metric == 'delta':
+            partitioned_array = np.partition(probs, self._classes_num - 2, axis=1)
+            max_values = partitioned_array[:, -1]
+            pre_max_values = partitioned_array[:, -2]
+            delta = max_values - pre_max_values
+            return 1.0 / (self._delta_addition + delta)
+
         else:
             raise ValueError('Unknown uncertainty type: {}'.format(self._uncertainty_metric))
 
     def _update_params(self, probs, labeled_pool, unlabeled_pool, indexes_to_label):
         pass
+
+    @property
+    def _delta_addition(self):
+        return self._params.get('delta_addition', 0.1)
 
     @classmethod
     def get_info(cls, params):
@@ -134,7 +190,8 @@ class BaseDensityBasedActiveLearningStrategy(BaseActiveLearningStrategy):
         closeness = np.zeros(len(first_pool))
         reduced_size = max(int(len(second_pool) * self._share), 1)
         second_pool_ind = np.random.choice(len(second_pool), size=reduced_size, replace=False)
-        second_pool = second_pool[second_pool_ind]
+        second_pool = get_features(second_pool[second_pool_ind], add_position=False)
+        first_pool = get_features(first_pool, add_position=False)
 
         for b_start_ind in range(0, len(first_pool), self._batch_size):
             b_end_ind = b_start_ind + self._batch_size
@@ -249,11 +306,14 @@ class MixActiveLearningStrategy(BaseActiveLearningStrategy):
     @classmethod
     def get_info(cls, params):
         info = {}
-        for key in params.keys():
-            info.update({
-                key + '_' + param_key: param_value
-                for param_key, param_value in STRATEGIES[key].get_info(params[key]).items()
-            })
+        for key, value in params.items():
+            if key in STRATEGIES:
+                info.update({
+                    key + '_' + param_key: param_value
+                    for param_key, param_value in STRATEGIES[key].get_info(value).items()
+                })
+            else:
+                info[key] = value
 
         return info
 
@@ -263,6 +323,7 @@ STRATEGY_CLASSES = [
     PassiveLearningStrategy,
     DiversityActiveLearningStrategy,
     DensityActiveLearningStrategy,
+    PositionRelevanceActiveLearningStragety,
 ]
 STRATEGIES = {
     cls.name: cls
