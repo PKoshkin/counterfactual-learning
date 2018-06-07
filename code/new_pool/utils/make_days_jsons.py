@@ -4,8 +4,8 @@ import os
 from datetime import datetime
 import time
 import random
-from json import loads as json_from_string, dumps
 from pool_iterator import pool_iterator
+from json import dumps
 
 
 def make_days_jsons(pool_iterator, skip_prob, out_folder, timestamps, debug):
@@ -19,6 +19,7 @@ def make_days_jsons(pool_iterator, skip_prob, out_folder, timestamps, debug):
             timestamp = int(item["ts"])
             date = datetime.fromtimestamp(timestamp).date()
             day_timestamp = int(time.mktime(date.timetuple()))
+
             print(dumps(item), file=handlers[day_timestamp])
 
 
@@ -39,7 +40,7 @@ def main():
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
 
-    make_days_jsons(pool_iterator, args.skip_prob, args.out_folder, timestamps, args.debug)
+    make_days_jsons(lambda: pool_iterator(args.pool_path), args.skip_prob, args.out_folder, timestamps, args.debug)
 
 
 if __name__ == "__main__":
