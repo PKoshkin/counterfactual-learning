@@ -1,5 +1,5 @@
 from sklearn.svm import LinearSVR
-from sklearn.linear_model import Lars, ARDRegression, ElasticNet, Perceptron
+from sklearn.linear_model import Lars, ElasticNet, Perceptron
 
 
 from regression import calculate_regression_predictions
@@ -14,8 +14,6 @@ def calculate_linear(model, data_folder, out_folder, first_feature, last_feature
         model_constructor = LinearSVR
     elif model.lower() == "lars":
         model_constructor = Lars
-    elif model.lower() == "ard":
-        model_constructor = ARDRegression
     elif model.lower() == "elastic":
         model_constructor = ElasticNet
     elif model.lower() == "perceptron":

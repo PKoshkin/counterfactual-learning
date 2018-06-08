@@ -43,3 +43,24 @@ def test_regression():
             assert np.shape(predictions)[1] == len(POSITIONS_VARIANTS)
 
     clear()
+
+
+def test_classification():
+    max_clicks = 3
+    make_days_data()
+    os.mkdir("res")
+    os.system("python2 {} --data_folder {} --out_folder res --model catboost --type classification --max_clicks {} --fast".format(
+        os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
+        days_data_path,
+        max_clicks
+    ))
+    # (DAYS_NUMBER - 1) result file and one times.txt file
+    assert len(os.listdir("res")) == DAYS_NUMBER
+
+    for filename in os.listdir("res"):
+        if filename != "times.txt":
+            predictions = np.load(os.path.join("res", filename))
+            assert len(np.shape(predictions)) == 3
+            assert np.shape(predictions)[1:] == (len(POSITIONS_VARIANTS), max_clicks + 2)
+
+    clear()

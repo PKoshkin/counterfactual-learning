@@ -1,3 +1,6 @@
 documents
 pool.json
+*.pytest_cache
+*catboost_info
+*.zip
 *.pyc

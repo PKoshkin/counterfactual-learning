@@ -5,7 +5,7 @@ import time
 import numpy as np
 
 sys.path.append("../utils")
-from constants import DAYS_NUMBER, POSITIONS_NUMBER, POSITIONS_VARIANTS
+from constants import DAYS_NUMBER, POSITIONS_VARIANTS
 from json_tools import get_features, get_classification_labels
 from pool_iterator import pool_iterator
 
@@ -37,7 +37,7 @@ def calculate_simple_classification_predictions(model_constructor, data_folder, 
                 all_predictions = []
                 start = time.time()
                 for feature in features[i]:
-                    repeated_feature = np.repeat(np.array([feature[1:]]), POSITIONS_NUMBER, axis=0)
+                    repeated_feature = np.repeat(np.array([feature[1:]]), len(POSITIONS_VARIANTS), axis=0)
                     features_to_predict = np.concatenate([reshaped_positions, repeated_feature], axis=1)
                     probas_predictions = model.predict_proba(features_to_predict)
                     all_predictions.append(probas_predictions)
