@@ -90,3 +90,24 @@ def test_linear():
                     assert np.shape(predictions)[1] == len(POSITIONS_VARIANTS)
 
         clear()
+
+
+def test_binary_classification():
+    make_days_data()
+    os.mkdir("res")
+    threshold = 0
+    os.system("python2 {} --data_folder {} --out_folder res --model catboost --type binary_classification --threshold {} --verbose --fast".format(
+        os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
+        days_data_path,
+        threshold
+    ))
+    # (DAYS_NUMBER - 1) result file and one times.txt file
+    assert len(os.listdir("res")) == DAYS_NUMBER
+
+    for filename in os.listdir("res"):
+        if filename != "times.txt":
+            predictions = np.load(os.path.join("res", filename))
+            assert len(np.shape(predictions)) == 2
+            assert np.shape(predictions)[1] == 2
+
+    clear()
