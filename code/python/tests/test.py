@@ -111,3 +111,35 @@ def test_binary_classification():
             assert np.shape(predictions)[1] == 2
 
     clear()
+
+
+def test_linear_stacking():
+    max_clicks = 3
+    step = 100
+    model = "svr"
+    make_days_data()
+    os.mkdir("res")
+    os.mkdir("linear_predictions")
+    os.system("python2 {} --data_folder {} --out_folder {} --model {} --type linear --fast --step {} --verbose".format(
+        os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
+        days_data_path,
+        "linear_predictions",
+        model,
+        step
+    ))
+    os.system("python2 {} --data_folder {} --out_folder res --model catboost --type linear_stacking --linear_predictions {} --max_clicks {} --verbose --fast".format(
+        os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
+        days_data_path,
+        "linear_predictions",
+        max_clicks
+    ))
+    # (DAYS_NUMBER - 2) result file and one times.txt file
+    assert len(os.listdir("res")) == DAYS_NUMBER - 1
+
+    for filename in os.listdir("res"):
+        if filename != "times.txt":
+            predictions = np.load(os.path.join("res", filename))
+            assert len(np.shape(predictions)) == 3
+            assert np.shape(predictions)[1:] == (len(POSITIONS_VARIANTS), max_clicks + 2)
+
+    clear()

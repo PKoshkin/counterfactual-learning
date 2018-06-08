@@ -5,7 +5,7 @@ import time
 import numpy as np
 
 sys.path.append("../utils")
-from constants import DAYS_NUMBER, POSITIONS_NUMBER, POSITIONS_VARIANTS
+from constants import DAYS_NUMBER, POSITIONS_VARIANTS
 from json_tools import get_linear_stacked_features, get_classification_labels
 from pool_iterator import pool_iterator
 
@@ -31,18 +31,19 @@ def calculate_classification_stacked_on_linear_predictions(model_constructor,
     json_filenames = [os.path.join(data_folder, "day_{}.json".format(i)) for i in xrange(1, DAYS_NUMBER)]
     # features contain positions
     features = [
-        get_linear_stacked_features(json_filename, linear_predictions_for_days[day], True)
+        get_linear_stacked_features(pool_iterator(json_filename), linear_predictions_for_days[day], True)
         for day, json_filename in enumerate(json_filenames)
     ]
-    labels = [get_classification_labels(json_filename, max_clicks) for json_filename in json_filenames]
+    labels = [get_classification_labels(pool_iterator(json_filename), max_clicks) for json_filename in json_filenames]
     model = model_constructor()
 
     reshaped_positions = np.reshape(np.array(POSITIONS_VARIANTS), [-1, 1])
 
     with open(os.path.join(out_folder, "times.txt"), 'w') as times_handler:
-        for i in range(2, DAYS_NUMBER):
-            # i - index of test, (i-1) - index of train
-            res_filename = '_'.join(map(str, range(i))) + '-' + str(i) + '.txt'
+        for i in range(1, DAYS_NUMBER - 1):
+            # i - index of test, (i-1) - index of train (indices in features array).
+            # real days indices are (i + 1) for test and i for train
+            res_filename = '_'.join(map(str, range(1, i + 1))) + '-' + str(i + 1) + '.txt'
             with open(os.path.join(out_folder, res_filename), 'w') as res_handler:
                 start = time.time()
                 model.fit(features[i - 1], labels[i - 1])
@@ -51,8 +52,9 @@ def calculate_classification_stacked_on_linear_predictions(model_constructor,
 
                 all_predictions = []
                 start = time.time()
+                # features
                 for feature in features[i]:
-                    repeated_feature = np.repeat(np.array([feature[1:]]), POSITIONS_NUMBER, axis=0)
+                    repeated_feature = np.repeat(np.array([feature[1:]]), len(POSITIONS_VARIANTS), axis=0)
                     features_to_predict = np.concatenate([reshaped_positions, repeated_feature], axis=1)
                     probas_predictions = model.predict_proba(features_to_predict)
                     all_predictions.append(probas_predictions)
