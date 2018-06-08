@@ -252,7 +252,7 @@ class DiversityActiveLearningStrategy(BaseDensityBasedActiveLearningStrategy):
         self._closeness = self._compute_closeness(unlabeled_pool, labeled_pool)
 
     def _compute_scores(self, probs, labeled_pool, unlabeled_pool):
-        return -self._closeness
+        return 1 - self._closeness
 
     def _update_closeness(self, new_unlabeled_pool, new_labeled_pool_part):
         closeness_update = self._compute_closeness(new_unlabeled_pool, new_labeled_pool_part)
@@ -269,7 +269,7 @@ class DensityActiveLearningStrategy(BaseDensityBasedActiveLearningStrategy):
         self._closeness = self._compute_closeness(unlabeled_pool, unlabeled_pool)
 
     def _compute_scores(self, probs, labeled_pool, unlabeled_pool):
-        return self._closeness ** self._beta
+        return 1 + self._closeness ** self._beta
 
     def _update_closeness(self, new_unlabeled_pool, new_labeled_pool_part):
         closeness_update = self._compute_closeness(new_unlabeled_pool, new_labeled_pool_part)
