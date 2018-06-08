@@ -1,4 +1,5 @@
 import os
+import shutil
 
 
 data_path = "../../../sorted_data"
@@ -18,10 +19,7 @@ def make_days_data():
 
 def rm_dir(dir_name):
     if os.path.exists(dir_name):
-        for filename in os.listdir(dir_name):
-            filename = os.path.join(dir_name, filename)
-            os.remove(filename)
-        os.rmdir(dir_name)
+        shutil.rmtree(dir_name)
 
 
 def clear():

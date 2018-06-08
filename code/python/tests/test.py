@@ -29,7 +29,7 @@ def test_days_data():
 def test_regression():
     make_days_data()
     os.mkdir("res")
-    os.system("python2 {} --data_folder {} --out_folder res --model catboost --type regression --fast".format(
+    os.system("python2 {} --data_folder {} --out_folder res --model catboost --type regression --fast --verbose".format(
         os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
         days_data_path
     ))
@@ -49,7 +49,7 @@ def test_classification():
     max_clicks = 3
     make_days_data()
     os.mkdir("res")
-    os.system("python2 {} --data_folder {} --out_folder res --model catboost --type classification --max_clicks {} --fast".format(
+    os.system("python2 {} --data_folder {} --out_folder res --model catboost --type classification --max_clicks {} --fast --verbose".format(
         os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
         days_data_path,
         max_clicks
@@ -64,3 +64,29 @@ def test_classification():
             assert np.shape(predictions)[1:] == (len(POSITIONS_VARIANTS), max_clicks + 2)
 
     clear()
+
+
+def test_linear():
+    step = 100
+    models = ["svr", "lars", "elastic", "perceptron"]
+    for model in models:
+        make_days_data()
+        os.mkdir("res")
+        os.system("python2 {} --data_folder {} --out_folder res --model {} --type linear --fast --step {} --verbose".format(
+            os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
+            days_data_path,
+            model,
+            step
+        ))
+        # (DAYS_NUMBER - 1) result file and one times.txt file
+        for folder in os.listdir("res"):
+            directory = os.path.join("res", folder)
+            assert len(os.listdir(directory)) == DAYS_NUMBER
+
+            for filename in os.listdir(directory):
+                if filename != "times.txt":
+                    predictions = np.load(os.path.join(directory, filename))
+                    assert len(np.shape(predictions)) == 2
+                    assert np.shape(predictions)[1] == len(POSITIONS_VARIANTS)
+
+        clear()
