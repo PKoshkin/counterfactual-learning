@@ -6,6 +6,7 @@ from math import ceil
 import sys
 
 from utils import get_features
+from classifier import train, predict_positions
 
 
 class BaseStrategy(object):
@@ -316,6 +317,93 @@ class MixActiveLearningStrategy(BaseActiveLearningStrategy):
                 info[key] = value
 
         return info
+
+
+class QBCMetrics(object):
+    VE = 'VE'
+    KL = 'KL'
+
+    @classmethod
+    def get_all(cls):
+        return [var for var in vars(cls) if not var.startswith('__') and var != 'get_all']
+
+
+class QBCActiveLearningStrategy(BaseActiveLearningStrategy):
+
+    def __init__(self, params):
+        self._params = params
+        self._iteration = 0
+
+    def _compute_metric(self, auxilary_predicted_probs, main_predicted_probs):
+        all_probs = np.concatenate(auxilary_predicted_probs + [main_predicted_probs])
+        top_probs = np.argpartition(all_probs, -self._top_number, axis=2)[:, :, -self._top_number:]
+
+        if self._metric == QBCMetrics.VE:
+
+
+    def _get_scores(self, probs, labeled_pool, unlabeled_pool):
+        if self._iteration == 0:
+            self._pool_indexes = [
+                np.random.choice(len(labeled_pool), len(labeled_pool))
+                for _ in xrange(self._models_num)
+            ]
+            self._models = [
+                train(labeled_pool[indexes], **self._learning_params)
+                for indexes in self._pool_indexes
+            ]
+
+        auxilary_predicted_probs = [
+            predict_positions(unlabeled_pool, model, return_probs=True)
+            for model in self._models
+        ]
+        self._compute_metric(auxilary_predicted_probs, probs)
+
+    def _update_params(self, probs, labeled_pool, unlabeled_pool, indexes_to_label):
+        for pool_ind in xrange(self._models_num):
+            new_indexes = len(labeled_pool) + np.random.choice(
+                len(indexes_to_label), len(indexes_to_label)
+            )
+            self._pool_indexes[pool_ind] = np.concatenate((
+                self._pool_indexes[pool_ind], new_indexes
+            ))
+        model_ind = self._iteration % self._models_num
+        train_pool = np.concatenate(
+            (
+                labeled_pool[self._pool_indexes[model_ind][:len(labeled_pool)]],
+                unlabeled_pool[indexes_to_label][new_indexes - len(labeled_pool)]
+            ),
+            axis=0
+        )
+        self._models[model_ind] = train(train_pool, **self._learning_params)
+
+    @property
+    def _models_num(self):
+        models_num = self._params.get('models_num', 3)
+
+        assert isinstance(models_num, int) and models_num > 0, (
+            'models_num should be int and greater than one. Got: ' + str(models_num)
+        )
+        return models_num
+
+    @property
+    def _learning_params(self):
+        return self._params.get('learning_params', {'iterations': 500})
+
+    @property
+    def _metric(self):
+        metric = self._params.get('metric', QBCMetrics.VE)
+        assert metric in QBCMetrics.get_all(), (
+            'Unknown metric: {}, allowed metrics: {}'.format(metric, QBCMetrics.get_all())
+        )
+        return metric
+
+    @property
+    def _top_number(self):
+        top_number = self._params.get('top_number', 3)
+        assert isinstance(top_number, int) and top_number > 0, (
+            'top_number should be int and greater than 0. Got: ' + str(top_number)
+        )
+        return top_number
 
 
 STRATEGY_CLASSES = [

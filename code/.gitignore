@@ -5,3 +5,4 @@ little_pool.json
 *.model
 *.txt
 xgboost
+*__pycache__*

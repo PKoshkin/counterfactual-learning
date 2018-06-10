@@ -71,3 +71,7 @@ def test_mix_params():
 
 def test_PR():
     _test('PR')
+
+
+def test_QBC():
+    _test('QBC')
