@@ -14,16 +14,19 @@ public:
     virtual std::string name() = 0;
     virtual void initialize(
         const Pool& train_pool,
-        const std::vector<int>& indexes_permutation,
-        int labeled_pool_size) = 0;
+        const std::vector<int>& permutation,
+        int labeled_pool_size
+    ) = 0;
     virtual void update(
         const Pool& train_pool,
         const std::vector<int>& batch,
-        const std::list<int>& unlabeled_indexes) = 0;
+        const std::list<int>& unlabeled_indexes
+    ) = 0;
     virtual double get_score(
         CounterfacturalModel* current_model,
         const Pool& train_pool,
-        int index) = 0;
+        int index
+    ) = 0;
 };
 
 
@@ -33,7 +36,7 @@ public:
     virtual std::string name();
     virtual void initialize(
         const Pool& train_pool,
-        const std::vector<int>& indexes_permutation,
+        const std::vector<int>& permutation,
         int labeled_pool_size);
     virtual void update(
         const Pool& train_pool,
@@ -59,7 +62,7 @@ public:
     virtual std::string name();
     virtual void initialize(
         const Pool& train_pool,
-        const std::vector<int>& indexes_permutation,
+        const std::vector<int>& permutation,
         int labeled_pool_size);
     virtual void update(
         const Pool& train_pool,
@@ -70,3 +73,31 @@ public:
         const Pool& train_pool,
         int index);
 };
+
+/*
+class PoolBasedQBC : public BasePoolBasedActiveLearningStrategy {
+    std::vector<CounterfacturalModel*> committee;
+    std::vector<Pool> train_pools;
+    uint32_t iteration_ind;
+    std::vector<std::vector<std::vector<<double>>> committee_probas;
+public:
+    PoolBasedQBC(std::vector<CounterfacturalModel*>&& committee);
+    virtual bool is_model_free();
+    virtual std::string name();
+    virtual void initialize(
+        const Pool& train_pool,
+        const std::vector<int>& permutation,
+        int labeled_pool_size
+    );
+    virtual void update(
+        const Pool& train_pool,
+        const std::vector<int>& batch,
+        const std::list<int>& unlabeled_indexes
+    );
+    virtual double get_score(
+        CounterfacturalModel* current_model,
+        const Pool& train_pool,
+        int index
+    );
+}
+*/

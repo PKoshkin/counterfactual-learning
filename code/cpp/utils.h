@@ -7,6 +7,10 @@
 #include <iostream>
 
 
+typedef double GetAnswer(const std::string& line, size_t index);
+typedef double GetFeature(const std::string& line, size_t index_start, size_t index_end);
+
+
 const int FACTORS_LEN = 1052;
 const std::vector<std::string> KRKOPT_ANSWERS = {
     "draw", "zero", "one", "two", "three", "four", "five", "six",
@@ -15,7 +19,21 @@ const std::vector<std::string> KRKOPT_ANSWERS = {
 };
 
 
-Pool get_test_classification_pool(std::string file_name, int start_size = 28056);
+Pool get_test_classification_pool(
+    std::string file_name,
+    GetAnswer* get_answer,
+    GetFeature* get_feature,
+    int start_size = 0
+);
+double get_krkopt_feature(const std::string& line, size_t index_start, size_t index_end);
+double get_krkopt_isfourteen_answer(const std::string& line, size_t index);
+double get_krkopt_raw_answer(const std::string& line, size_t index);
+double get_float_feature(const std::string& line, size_t index_start, size_t index_end);
+double get_sonar_answer(const std::string& line, size_t index);
+double get_breast_answer(const std::string& line, size_t index);
+double get_diabetes_answer(const std::string& line, size_t index);
+double get_ionosphere_answer(const std::string& line, size_t index);
+
 Pool get_pool(std::string file_name, int max_line = 30000, int start_size = 0);
 std::pair<Pool, Pool> train_test_split(
     const Pool& pool,
@@ -39,3 +57,5 @@ uint32_t get_uint_param(
     uint32_t default_value,
     const char name[]
 );
+
+

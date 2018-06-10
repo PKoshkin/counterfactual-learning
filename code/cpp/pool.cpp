@@ -50,12 +50,21 @@ void Pool::assign(
     std::vector<int>::const_iterator begin,
     std::vector<int>::const_iterator end
 ) {
-    resize(end - begin);
-
-    for (auto it = begin; it != end; ++it)
-        set(it - begin, pool.get(*it));
+    clear();
+    push_back(pool, begin, end);
 }
 
+
+void Pool::push_back(
+    const Pool& pool,
+    std::vector<int>::const_iterator begin,
+    std::vector<int>::const_iterator end
+) {
+    int start_size = size();
+    resize(size() + end - begin);
+    for (auto it = begin; it != end; ++it)
+        set(start_size + (it - begin), pool.get(*it));
+}
 
 std::vector<Pool> Pool::split_by_positions() const {
     std::vector<Pool> result(POSITIONS.size());
@@ -90,14 +99,7 @@ void Pool::erase(uint32_t index) {
 
 
 void Pool::set(uint32_t index, const Object& obj) {
-    if (index < size()) {
-        positions[index] = obj.position;
-        metrics[index] = obj.metric;
-        probas[index] = obj.proba;
-        factors[index] = obj.factors;
-    } else {
-        throw std::runtime_error("Pool index out of range");
-    }
+    set(index, obj.position, obj.metric, obj.proba, obj.factors);
 }
 
 

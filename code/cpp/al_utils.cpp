@@ -34,7 +34,8 @@ void set_algo(
     std::string log_filename,
     Metric* metric
 ) {
-    if (!strcmp(strategy_name, "random")) {
+    std::string name(strategy_name);
+    if (name == "random") {
         active_learning_algo = std::move(std::unique_ptr<ActiveLearningAlgo>(
             new PoolBasedPassiveLearningAlgo(
                 &model,
@@ -46,14 +47,17 @@ void set_algo(
             )
         ));
     } else {
-        if (!strcmp(strategy_name, "US")) {
+        if (name == "US") {
             strategy = std::move(std::unique_ptr<BasePoolBasedActiveLearningStrategy>(
                 new PoolBasedUncertaintySamplingStrategy
             ));
         }
-        else if (!strcmp(strategy_name, "diversity")) {
+        else if (name.substr(0, 9) == "diversity") {
+            double share = 0;
+            if (name.size() > 9)
+                share = std::stof(name.substr(9));
             strategy = std::move(std::unique_ptr<BasePoolBasedActiveLearningStrategy>(
-                new PoolBasedDiversity(0.2)
+                new PoolBasedDiversity(share)
             ));
         }
         else {

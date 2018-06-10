@@ -35,6 +35,11 @@ public:
         std::vector<int>::const_iterator begin,
         std::vector<int>::const_iterator end
     );
+    void push_back(
+        const Pool& pool,
+        std::vector<int>::const_iterator begin,
+        std::vector<int>::const_iterator end
+    );
     std::vector<Pool> split_by_positions() const;
     void push_back(const Object& obj);
     void erase(uint32_t index);

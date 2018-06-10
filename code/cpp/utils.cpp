@@ -37,32 +37,98 @@ std::pair<Pool, Pool> train_test_split(const Pool& pool, double train_share, uin
 }
 
 
-Pool get_test_classification_pool(std::string file_name, int start_size) {
+double get_krkopt_feature(const std::string& line, size_t index_start, size_t index_end) {
+    if ('a' <= line[index_start] && line[index_start] <= 'h')
+        return line[index_start] - 'a';
+    else
+        return line[index_start] - '0';
+}
+
+
+double get_krkopt_isfourteen_answer(const std::string& line, size_t index) {
+    if (line.substr(index) == KRKOPT_ANSWERS[15])
+        return 0;
+    else
+        return 1;
+}
+
+
+double get_krkopt_raw_answer(const std::string& line, size_t index) {
+    for (int answer_index = 0; answer_index < KRKOPT_ANSWERS.size(); ++answer_index)
+        if (KRKOPT_ANSWERS[answer_index] == line.substr(index))
+            return answer_index;
+}
+
+
+double get_float_feature(const std::string& line, size_t index_start, size_t index_end) {
+    if ('0' > line[index_start] || line[index_start] > '9')
+        return -1;
+    else
+        return std::stof(line.substr(index_start));
+}
+
+
+double get_breast_answer(const std::string& line, size_t index) {
+    if (line[index] == 'b')
+        return 0;
+    else
+        return 1;
+}
+
+
+double get_ionosphere_answer(const std::string& line, size_t index) {
+    if (line[index] == 'g')
+        return 0;
+    else
+        return 1;
+}
+
+
+double get_diabetes_answer(const std::string& line, size_t index) {
+    if (line[index + 7] == 'n')
+        return 0;
+    else
+        return 1;
+}
+
+double get_sonar_answer(const std::string& line, size_t index) {
+    if (line[index] == 'R')
+        return 0;
+    else
+        return 1;
+}
+
+
+Pool get_test_classification_pool(
+    std::string file_name,
+    GetAnswer* get_answer,
+    GetFeature* get_feature,
+    int start_size
+) {
     std::ifstream infile(file_name);
     std::string line;
     Pool result;
     result.reserve(start_size);
 
+    size_t line_ind = 0;
     while (std::getline(infile, line)) {
-        std::vector<double> factors(6);
-        for (int i = 0; i < 3; ++i) {
-            factors[2 * i] = static_cast<double>(line[4 * i] - 'a');
-            factors[2 * i + 1] = static_cast<double>(line[4 * i + 2] - '0');
-        }
-
-        double answer;
-        if (line.substr(12) == KRKOPT_ANSWERS[15])
-            answer = 0;
-        else
-            answer = 1;
-        /*
-        for (int index = 0; index < KRKOPT_ANSWERS.size(); ++index)
-            if (KRKOPT_ANSWERS[index] == line.substr(12)) {
-                answer = index;
+        std::vector<double> factors;
+        size_t index = 0;
+        while (index < line.size()) {
+            size_t comma_ind = line.find(',', index);
+            if (comma_ind == std::string::npos)
                 break;
-            }
-        */
+            factors.push_back(get_feature(line, index, comma_ind));
+            index = comma_ind + 1;
+        }
+        double answer = get_answer(line, index);
         result.push_back(Object(0, answer, 1, factors));
+        if (line_ind < 10) {
+            for (auto it: factors)
+                std::cout << it << " ";
+            std::cout << answer << std::endl;
+        }
+        line_ind++;
     }
 
     return result;

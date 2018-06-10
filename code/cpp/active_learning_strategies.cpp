@@ -22,23 +22,24 @@ bool PoolBasedUncertaintySamplingStrategy::is_model_free() {
 
 
 void PoolBasedUncertaintySamplingStrategy::initialize(
-        const Pool& train_pool,
-        const std::vector<int>& indexes_permutation,
-        int labeled_pool_size) {
-}
+    const Pool& train_pool,
+    const std::vector<int>& permutation,
+    int labeled_pool_size
+) {}
 
 
 void PoolBasedUncertaintySamplingStrategy::update(
-        const Pool& train_pool,
-        const std::vector<int>& batch,
-        const std::list<int>& unlabeled_indexes) {
-}
+    const Pool& train_pool,
+    const std::vector<int>& batch,
+    const std::list<int>& unlabeled_indexes
+) {}
 
 
 double PoolBasedUncertaintySamplingStrategy::get_score(
-        CounterfacturalModel* current_model,
-        const Pool& train_pool,
-        int index) {
+    CounterfacturalModel* current_model,
+    const Pool& train_pool,
+    int index
+) {
     std::vector<double> probas = current_model->predict_proba(train_pool.get(index));
 
     return 1 - *std::max_element(probas.begin(), probas.end());
@@ -77,18 +78,18 @@ double PoolBasedDiversity::cosin_similarity(
 
 void PoolBasedDiversity::initialize(
         const Pool& train_pool,
-        const std::vector<int>& indexes_permutation,
+        const std::vector<int>& permutation,
         int labeled_pool_size) {
     current_scores.resize(train_pool.size(), -2);
     object_norms.resize(train_pool.size(), -1);
 
     for (
         int unlabeled_permutation_ind = labeled_pool_size;
-        unlabeled_permutation_ind < indexes_permutation.size();
+        unlabeled_permutation_ind < permutation.size();
         ++unlabeled_permutation_ind
     ) {
 
-        int unlabeled_ind = indexes_permutation[unlabeled_permutation_ind];
+        int unlabeled_ind = permutation[unlabeled_permutation_ind];
 
         for (
             int labeled_ind = 0;
@@ -98,7 +99,7 @@ void PoolBasedDiversity::initialize(
             double score = cosin_similarity(
                 train_pool.factors,
                 unlabeled_ind,
-                indexes_permutation[labeled_ind]
+                permutation[labeled_ind]
             );
             if (score > current_scores[unlabeled_ind])
                 current_scores[unlabeled_ind] = score;
@@ -130,3 +131,59 @@ double PoolBasedDiversity::get_score(
         int index) {
     return -current_scores[index];
 }
+
+/*
+PoolBasedQBC::PoolBasedQBC(std::vector<CounterfacturalModel*>&& committee)
+    : committee(committee) {}
+
+
+bool PoolBasedQBC::is_model_free() {return true;}
+
+
+std::string PoolBasedQBC::name() {return "QBC";}
+
+
+void PoolBasedQBC::initialize(
+    const Pool& train_pool,
+    const std::vector<int>& permutation,
+    int labeled_pool_size
+) {
+    committee_probas = std::vector<std::vector<std::vector<double>>>(
+        train_pool.size(),
+        std::vector<std::vector<double>>(
+            committee.size(),
+            std::vector<double>(train_pool.POSITIONS.size())
+        )
+    );
+    iteration_ind = 0;
+
+    for (int model_ind = 0; model_ind < committee.size(); ++model_ind) {
+        auto begin = permutation.begin() + model_ind * labeled_pool_size / committee.size();
+        int end_ind = (model_ind + 1) * labeled_pool_size / committee.size();
+        if (model_ind == committee.size() - 1)
+            end_ind = permutation.size();
+        auto end = permutation.begin() + end_ind;
+        train_pools[model_ind].assign(train_pool, begin, end);
+        if (model_ind == committee.size() - 1) {
+            end = permutation.begin() + labeled_pool_size / committee.size();
+            train_pools[model_ind].push_back(train_pool, permutation.begin(), end);
+        }
+
+        committee[model_ind]->fit(train_pools[model_ind]);
+    }
+}
+
+
+void PoolBasedQBC::update(
+    const Pool& train_pool,
+    const std::vector<int>& batch,
+    const std::list<int>& unlabeled_indexes
+) {
+    int model_ind = iteration_ind % committee.size();
+    train_pools[model_ind].push_back(train_pool, batch.begin(), batch.end());
+    for (auto obj_ind: unlabeled_indexes) {
+
+        train_pool
+    }
+}
+*/
