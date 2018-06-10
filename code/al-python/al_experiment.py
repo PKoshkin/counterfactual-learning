@@ -9,7 +9,7 @@ from math import ceil
 
 from classifier import train, predict_positions
 from utils import write_to_csv, read_csv, calculate_metric, log
-from strategies import get_strategy
+from strategies import get_strategy, STRATEGIES
 
 
 def _run_al_experiment(
@@ -18,6 +18,7 @@ def _run_al_experiment(
     test_pool,
     algo,
     strategy_name,
+    strategy_params,
     strategy,
     batch_size,
     end_size,
@@ -29,6 +30,7 @@ def _run_al_experiment(
     params = {
         "algo": algo,
         "strategy": strategy_name,
+        "strategy_params": json.dumps(strategy_params),
         "batch size": batch_size,
         "initial size": len(labeled_pool),
         "max queries": end_size,
@@ -99,6 +101,7 @@ def main():
         test_pool,
         'pool-based',
         args.strategy,
+        args.strategy_params,
         strategy,
         args.batch_size,
         args.end_size,
