@@ -29,7 +29,7 @@ def test_days_data():
 def test_regression():
     make_days_data()
     os.mkdir("res")
-    os.system("python2 {} --data_folder {} --out_folder res --model catboost --type regression --fast --verbose".format(
+    os.system("python2 {} --data_folder {} --out_folder res --model catboost regression".format(
         os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
         days_data_path
     ))
@@ -49,7 +49,7 @@ def test_classification():
     max_clicks = 3
     make_days_data()
     os.mkdir("res")
-    os.system("python2 {} --data_folder {} --out_folder res --model catboost --type classification --max_clicks {} --fast --verbose".format(
+    os.system("python2 {} --data_folder {} --out_folder res --model catboost classification --max_clicks {}".format(
         os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
         days_data_path,
         max_clicks
@@ -72,7 +72,7 @@ def test_linear():
     for model in models:
         make_days_data()
         os.mkdir("res")
-        os.system("python2 {} --data_folder {} --out_folder res --model {} --type linear --fast --step {} --verbose".format(
+        os.system("python2 {} --data_folder {} --out_folder res --model {} linear --step {}".format(
             os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
             days_data_path,
             model,
@@ -96,7 +96,7 @@ def test_binary_classification():
     make_days_data()
     os.mkdir("res")
     threshold = 0
-    os.system("python2 {} --data_folder {} --out_folder res --model catboost --type binary_classification --threshold {} --verbose --fast".format(
+    os.system("python2 {} --data_folder {} --out_folder res --model catboost binary_classification --threshold {}".format(
         os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
         days_data_path,
         threshold
@@ -120,14 +120,14 @@ def test_linear_stacking():
     make_days_data()
     os.mkdir("res")
     os.mkdir("linear_predictions")
-    os.system("python2 {} --data_folder {} --out_folder {} --model {} --type linear --fast --step {} --verbose".format(
+    os.system("python2 {} --data_folder {} --out_folder {} --model {} linear --step {}".format(
         os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
         days_data_path,
         "linear_predictions",
         model,
         step
     ))
-    os.system("python2 {} --data_folder {} --out_folder res --model catboost --type linear_stacking --linear_predictions {} --max_clicks {} --verbose --fast".format(
+    os.system("python2 {} --data_folder {} --out_folder res --model catboost linear_stacking --linear_predictions {} --max_clicks {}".format(
         os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
         days_data_path,
         "linear_predictions",
@@ -149,7 +149,7 @@ def test_regression_evaluation():
     make_days_data()
     os.mkdir("res")
     os.mkdir("metrics")
-    os.system("python2 {} --data_folder {} --out_folder res --model catboost --type regression --fast".format(
+    os.system("python2 {} --data_folder {} --out_folder res --model catboost regression --fast".format(
         os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
         days_data_path
     ))

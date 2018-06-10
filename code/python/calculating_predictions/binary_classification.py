@@ -10,23 +10,23 @@ from json_tools import get_features, get_binary_labels
 from pool_iterator import pool_iterator
 
 
-def calculate_binary_classification_predictions(model_constructor, data_folder, out_folder, threshold):
+def calculate_binary_classification_predictions(args):
     """
     model_constructor: regression model. Has fit(x, y) and predict(x) methods.
     data_folder: str. Directory, containing files "day_i.json" where i in range(DAYS_NUMBER).
     out_folder: str. Directory, to save results. DAYS_NUMBER - 1 files will be created.
     """
     # features contain positions
-    json_filenames = [os.path.join(data_folder, "day_{}.json".format(i)) for i in xrange(DAYS_NUMBER)]
+    json_filenames = [os.path.join(args.data_folder, "day_{}.json".format(i)) for i in xrange(DAYS_NUMBER)]
     features = [get_features(pool_iterator(json_filename), False) for json_filename in json_filenames]
-    labels = [get_binary_labels(pool_iterator(json_filename), threshold) for json_filename in json_filenames]
-    model = model_constructor()
+    labels = [get_binary_labels(pool_iterator(json_filename), args.threshold) for json_filename in json_filenames]
+    model = args.model_constructor(args.verbose)
 
-    with open(os.path.join(out_folder, "times.txt"), 'w') as times_handler:
+    with open(os.path.join(args.out_folder, "times.txt"), 'w') as times_handler:
         for i in range(1, DAYS_NUMBER):
             # i - index of test, (i-1) - index of train
             res_filename = '_'.join(map(str, range(i))) + '-' + str(i) + '.txt'
-            with open(os.path.join(out_folder, res_filename), 'w') as res_handler:
+            with open(os.path.join(args.out_folder, res_filename), 'w') as res_handler:
                 start = time.time()
                 model.fit(features[i - 1], labels[i - 1])
                 end = time.time()
