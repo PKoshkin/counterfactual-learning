@@ -149,7 +149,7 @@ def test_regression_evaluation():
     make_days_data()
     os.mkdir("res")
     os.mkdir("metrics")
-    os.system("python2 {} --data_folder {} --out_folder res --model catboost regression --fast".format(
+    os.system("python2 {} --data_folder {} --out_folder res --model catboost regression".format(
         os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
         days_data_path
     ))
@@ -166,7 +166,7 @@ def test_classification_evaluation():
     make_days_data()
     os.mkdir("res")
     os.mkdir("metrics")
-    os.system("python2 {} --data_folder {} --out_folder res --model catboost --type classification --max_clicks {} --fast --verbose".format(
+    os.system("python2 {} --data_folder {} --out_folder res --model catboost classification --max_clicks {}".format(
         os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
         days_data_path,
         max_clicks
