@@ -143,3 +143,37 @@ def test_linear_stacking():
             assert np.shape(predictions)[1:] == (len(POSITIONS_VARIANTS), max_clicks + 2)
 
     clear()
+
+
+def test_regression_evaluation():
+    make_days_data()
+    os.mkdir("res")
+    os.mkdir("metrics")
+    os.system("python2 {} --data_folder {} --out_folder res --model catboost --type regression --fast".format(
+        os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
+        days_data_path
+    ))
+    os.system("python2 {} --data_folder {} --predictions_folder res --out_folder metrics --type argmax_regression".format(
+        os.path.join(new_pool_code_path, "evaluation/run_evaluation.py"),
+        days_data_path
+    ))
+    assert len([line for line in open("metrics/metrics.txt")]) == DAYS_NUMBER - 1
+    clear()
+
+
+def test_classification_evaluation():
+    max_clicks = 3
+    make_days_data()
+    os.mkdir("res")
+    os.mkdir("metrics")
+    os.system("python2 {} --data_folder {} --out_folder res --model catboost --type classification --max_clicks {} --fast --verbose".format(
+        os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
+        days_data_path,
+        max_clicks
+    ))
+    os.system("python2 {} --data_folder {} --predictions_folder res --out_folder metrics --type argmax_classification".format(
+        os.path.join(new_pool_code_path, "evaluation/run_evaluation.py"),
+        days_data_path
+    ))
+    assert len([line for line in open("metrics/metrics.txt")]) == DAYS_NUMBER - 1
+    clear()

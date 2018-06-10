@@ -26,3 +26,4 @@ def clear():
     rm_dir(days_data_path)
     rm_dir("res")
     rm_dir("linear_predictions")
+    rm_dir("metrics")
