@@ -15,14 +15,11 @@ def evaluate(predictions_folder, data_folder, out_folder, positions_by_predictio
         for filename in os.listdir(predictions_folder)
         if filename != "times.txt"
     ])
-    print(predictions_filenames)
     days = sorted([int(filename[-5]) for filename in predictions_filenames])
-    print(days)
     data_filenames = [
         os.path.join(data_folder, "day_{}.json".format(day))
         for day in days
     ]
-    print(data_filenames)
     with open(os.path.join(out_folder, "metrics.txt"), "w") as handler:
         for predictions_filename, data_filename in zip(predictions_filenames, data_filenames):
             predictions = np.load(predictions_filename)
