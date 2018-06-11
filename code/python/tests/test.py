@@ -33,8 +33,8 @@ def test_regression():
         os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
         days_data_path
     ))
-    # (DAYS_NUMBER - 1) result file and one times.txt file
-    assert len(os.listdir("res")) == DAYS_NUMBER
+    # (DAYS_NUMBER - 1) result file
+    assert len(os.listdir("res")) == DAYS_NUMBER - 1
 
     for filename in os.listdir("res"):
         if filename != "times.txt":
@@ -54,8 +54,8 @@ def test_classification():
         days_data_path,
         max_clicks
     ))
-    # (DAYS_NUMBER - 1) result file and one times.txt file
-    assert len(os.listdir("res")) == DAYS_NUMBER
+    # (DAYS_NUMBER - 1) result file
+    assert len(os.listdir("res")) == DAYS_NUMBER - 1
 
     for filename in os.listdir("res"):
         if filename != "times.txt":
@@ -78,17 +78,17 @@ def test_linear():
             model,
             step
         ))
-        # (DAYS_NUMBER - 1) result file and one times.txt file
+        # (DAYS_NUMBER - 1) result file
+        assert len(os.listdir("res")) > 0
         for folder in os.listdir("res"):
             directory = os.path.join("res", folder)
-            assert len(os.listdir(directory)) == DAYS_NUMBER
+            assert len(os.listdir(directory)) == DAYS_NUMBER - 1
 
             for filename in os.listdir(directory):
                 if filename != "times.txt":
                     predictions = np.load(os.path.join(directory, filename))
                     assert len(np.shape(predictions)) == 2
                     assert np.shape(predictions)[1] == len(POSITIONS_VARIANTS)
-
         clear()
 
 
@@ -101,8 +101,8 @@ def test_binary_classification():
         days_data_path,
         threshold
     ))
-    # (DAYS_NUMBER - 1) result file and one times.txt file
-    assert len(os.listdir("res")) == DAYS_NUMBER
+    # (DAYS_NUMBER - 1) result file
+    assert len(os.listdir("res")) == DAYS_NUMBER - 1
 
     for filename in os.listdir("res"):
         if filename != "times.txt":
@@ -133,8 +133,8 @@ def test_linear_stacking():
         "linear_predictions",
         max_clicks
     ))
-    # (DAYS_NUMBER - 2) result file and one times.txt file
-    assert len(os.listdir("res")) == DAYS_NUMBER - 1
+    # (DAYS_NUMBER - 2) result file
+    assert len(os.listdir("res")) == DAYS_NUMBER - 2
 
     for filename in os.listdir("res"):
         if filename != "times.txt":

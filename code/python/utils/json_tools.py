@@ -20,6 +20,17 @@ def get_classification_labels(pool_iterator, max_clicks):
     return get_from_pool(pool_iterator, "target", lambda item: min(int(item), max_clicks + 1))
 
 
+def get_labels(pool_iterator, args):
+    if args.type == "classification":
+        return get_classification_labels(pool_iterator, args.max_clicks)
+    elif args.type == "regression":
+        return get_regression_labels(pool_iterator)
+    elif args.type == "binary_classification":
+        return get_binary_labels(pool_iterator, args.threshold)
+    else:
+        raise ValueError("Wrong type {}".format(args.type))
+
+
 def make_feature(json, add_positions, first_feature, last_feature):
     if add_positions:
         return [json["pos"]] + json["factors"][first_feature:last_feature]
@@ -59,7 +70,3 @@ def get_features_range(pool_iterator, first_feature=0, last_feature=-1, add_posi
 
 def get_features(pool_iterator, add_positions=True):
     return get_features_range(pool_iterator, 0, -1, add_positions)
-
-
-def get_labels(pool_iterator):
-    return get_from_pool(pool_iterator, "target", int)

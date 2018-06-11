@@ -12,12 +12,12 @@ from pool_iterator import pool_iterator
 
 def calculate_classification_stacked_on_linear_predictions(args):
     """
-    model_constructor: regression model. Has fit(x, y) and predict(x) methods.
-    data_folder: str. Directory, containing files "day_i.json" where i in range(DAYS_NUMBER).
-    out_folder: str. Directory, to save results. DAYS_NUMBER - 1 files will be created.
-    linear_predictions: list of len linear_models_number with linear models results folders
+    args contain:
+        model_constructor: regression model. Has fit(x, y) and predict(x) methods.
+        data_folder: str. Directory, containing files "day_i.json" where i in range(DAYS_NUMBER).
+        out_folder: str. Directory, to save results. DAYS_NUMBER - 1 files will be created.
+        linear_predictions: list with linear models results folders
     """
-
 
     real_linear_predictions = []
     for linear_prediction in args.linear_predictions:

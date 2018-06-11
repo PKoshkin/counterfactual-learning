@@ -1,7 +1,5 @@
 import argparse
-from regression import calculate_regression_predictions
-from classification import calculate_classification_predictions
-from binary_classification import calculate_binary_classification_predictions
+from calculate_predictions import calculate_predictions
 from linear_stacking import calculate_classification_stacked_on_linear_predictions
 from catboost import CatBoostRegressor, CatBoostClassifier
 from linear import calculate_linear
@@ -13,23 +11,23 @@ def run():
     parser.add_argument("--out_folder", required=True)
     parser.add_argument("--model", required=True, help="catboost")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--first_feature", type=int, default=0)
+    parser.add_argument("--last_feature", type=int, default=-1)
 
     type_adder = parser.add_subparsers(dest="type")
 
     regression_parser = type_adder.add_parser("regression")
-    regression_parser.add_argument("--first_feature", type=int, default=0)
-    regression_parser.add_argument("--last_feature", type=int, default=-1)
-    regression_parser.set_defaults(func=calculate_regression_predictions)
+    regression_parser.set_defaults(func=calculate_predictions)
     regression_parser.set_defaults(model_constructor=lambda verbose: CatBoostRegressor(verbose=verbose))
 
     classification_parser = type_adder.add_parser("classification")
     classification_parser.add_argument("--max_clicks", type=int, required=True)
-    classification_parser.set_defaults(func=calculate_classification_predictions)
+    classification_parser.set_defaults(func=calculate_predictions)
     classification_parser.set_defaults(model_constructor=lambda verbose, max_clicks: CatBoostClassifier(verbose=verbose, loss_function='MultiClass', classes_count=max_clicks + 2))
 
     binary_classification_parser = type_adder.add_parser("binary_classification")
     binary_classification_parser.add_argument("--threshold", type=float, required=True)
-    binary_classification_parser.set_defaults(func=calculate_binary_classification_predictions)
+    binary_classification_parser.set_defaults(func=calculate_predictions)
     binary_classification_parser.set_defaults(model_constructor=lambda verbose: CatBoostClassifier(verbose=verbose))
 
     linear_parser = type_adder.add_parser("linear")
