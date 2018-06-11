@@ -33,6 +33,5 @@ def calculate_classification_stacked_on_linear_predictions(args):
 
     args.additional_features = linear_predictions
     args.type = "classification"
-    os.remove(os.path.join(args.data_folder, "day_0.json"))
 
     return calculate_predictions(args)

@@ -22,13 +22,18 @@ def calculate_predictions(args):
     else:
         model = args.model_constructor(args.verbose)
 
-    json_filenames = sorted(
-        [os.path.join(args.data_folder, filename) for filename in os.listdir(args.data_folder)],
-        key=lambda filename: int(filename[-6])
-    )
-
     if args.additional_features is None:
+        json_filenames = sorted(
+            [os.path.join(args.data_folder, filename) for filename in os.listdir(args.data_folder)],
+            key=lambda filename: int(filename[-6])
+        )
         args.additional_features = [[] for json_filename in json_filenames]
+    else:
+        json_filenames = sorted(
+            [os.path.join(args.data_folder, filename) for filename in os.listdir(args.data_folder) if filename != "train_0_test_1.txt"],
+            key=lambda filename: int(filename[-6])
+        )
+
 
     need_position_feature = (not args.type.startswith("binary"))
     features = [
