@@ -87,8 +87,7 @@ def test_linear():
             for filename in os.listdir(directory):
                 if filename != "times.txt":
                     predictions = np.load(os.path.join(directory, filename))
-                    assert len(np.shape(predictions)) == 2
-                    assert np.shape(predictions)[1] == len(POSITIONS_VARIANTS)
+                    assert len(np.shape(predictions)) == 1
         clear()
 
 

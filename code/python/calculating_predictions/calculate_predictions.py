@@ -5,7 +5,7 @@ import numpy as np
 
 sys.path.append("../utils")
 from constants import POSITIONS_VARIANTS
-from json_tools import get_features_range, get_labels
+from json_tools import get_linear_stacked_features, get_labels
 from pool_iterator import pool_iterator
 
 
@@ -14,26 +14,31 @@ def calculate_predictions(args):
     args contain:
         data_folder: str. Directory, containing files "day_i.json" where i in range(DAYS_NUMBER).
         out_folder: str. Directory, to save results. DAYS_NUMBER - 1 files will be created.
-        type: str. One of ["regression", "classification", "binary_classification"]
+        type: str. One of ["regression", "classification", "binary_classification", "binary_regression"]
+        additional_features: list of additional features for all days
     """
     if args.type == "classification":
         model = args.model_constructor(args.verbose, args.max_clicks)
-    elif args.type == "binary_classification":
-        model = args.model_constructor(args.verbose)
-    elif args.type == "regression":
-        model = args.model_constructor(args.verbose)
     else:
-        raise ValueError("Wrong type \"{}\"".format(args.type))
+        model = args.model_constructor(args.verbose)
 
     json_filenames = sorted(
         [os.path.join(args.data_folder, filename) for filename in os.listdir(args.data_folder)],
         key=lambda filename: int(filename[-6])
     )
 
-    need_position_feature = (args.type == "binary_classification")
+    if args.additional_features is None:
+        args.additional_features = [[] for json_filename in json_filenames]
+
+    need_position_feature = (not args.type.startswith("binary"))
     features = [
-        get_features_range(pool_iterator(json_filename), args.first_feature, args.last_feature, need_position_feature)
-        for json_filename in json_filenames
+        get_linear_stacked_features(
+            pool_iterator(json_filename),
+            linear_prediction,
+            args.first_feature,
+            args.last_feature,
+            need_position_feature
+        ) for linear_prediction, json_filename in zip(args.additional_features, json_filenames)
     ]
     labels = [get_labels(pool_iterator(json_filename), args) for json_filename in json_filenames]
 
@@ -47,6 +52,8 @@ def calculate_predictions(args):
 
             if args.type == "binary_classification":
                 predictions = model.predict_proba(features[i])
+            elif args.type == "binary_regression":
+                predictions = model.predict(features[i])
             else:
                 predictions = []
                 for feature in features[i]:

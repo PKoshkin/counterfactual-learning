@@ -23,7 +23,7 @@ def get_classification_labels(pool_iterator, max_clicks):
 def get_labels(pool_iterator, args):
     if args.type == "classification":
         return get_classification_labels(pool_iterator, args.max_clicks)
-    elif args.type == "regression":
+    elif args.type == "regression" or args.type == "binary_regression":
         return get_regression_labels(pool_iterator)
     elif args.type == "binary_classification":
         return get_binary_labels(pool_iterator, args.threshold)
@@ -38,35 +38,21 @@ def make_feature(json, add_positions, first_feature, last_feature):
         return json["factors"][first_feature:last_feature]
 
 
-def get_linear_stacked_features(pool_iterator, results_list, add_positions=True):
+def get_linear_stacked_features(pool_iterator, results_list, first_feature=0, last_feature=-1, add_positions=True):
     """
     results_list: list of strings - filenames of files with linear models predictions
-    """
-    results = [np.load(filename) for filename in results_list]
-    features = []
-    for i, item in enumerate(pool_iterator):
-        feature = make_feature(item, add_positions, 0, -1)
-        for result in results:
-            # take zero prediction (pos=0) to ignore position
-            feature.append(result[i][0])
-        features.append(feature)
-    return np.array(features)
-
-
-def get_features_range(pool_iterator, first_feature=0, last_feature=-1, add_positions=True):
-    """
-    Takes features from pool_iterator with indices from first_feature to last_feature and.
-    If add_positions == True concatinates position as zero feature. Index last_feature is not included.
     """
     assert first_feature >= 0
     if last_feature != -1:
         assert first_feature < last_feature
     assert type(add_positions) == bool
+
+    results = [np.load(filename) for filename in results_list]
     features = []
-    for item in pool_iterator:
-        features.append(make_feature(item, add_positions, first_feature, last_feature))
+    for i, item in enumerate(pool_iterator):
+        feature = make_feature(item, add_positions, first_feature, last_feature)
+        for result in results:
+            # take zero prediction (pos=0) to ignore position
+            feature.append(result[i])
+        features.append(feature)
     return np.array(features)
-
-
-def get_features(pool_iterator, add_positions=True):
-    return get_features_range(pool_iterator, 0, -1, add_positions)

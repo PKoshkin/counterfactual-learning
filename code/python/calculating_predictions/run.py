@@ -13,6 +13,7 @@ def run():
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--first_feature", type=int, default=0)
     parser.add_argument("--last_feature", type=int, default=-1)
+    parser.set_defaults(additional_features=None)
 
     type_adder = parser.add_subparsers(dest="type")
 
