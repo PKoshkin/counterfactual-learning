@@ -4,7 +4,7 @@ import sys
 import numpy as np
 
 sys.path.append("../utils")
-from constants import DAYS_NUMBER, POSITIONS_VARIANTS
+from constants import POSITIONS_VARIANTS
 from json_tools import get_features_range, get_labels
 from pool_iterator import pool_iterator
 
@@ -39,7 +39,7 @@ def calculate_predictions(args):
 
     reshaped_positions = np.reshape(np.array(POSITIONS_VARIANTS), [-1, 1])
 
-    for i in range(1, DAYS_NUMBER):
+    for i in range(1, len(json_filenames)):
         # i - index of test, (i-1) - index of train
         res_filename = "train_{}_test_{}.txt".format(i - 1, i)
         with open(os.path.join(args.out_folder, res_filename), 'w') as res_handler:

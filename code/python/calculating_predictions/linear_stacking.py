@@ -1,7 +1,6 @@
 from __future__ import print_function
 import os
 import sys
-import time
 import numpy as np
 
 sys.path.append("../utils")
