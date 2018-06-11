@@ -329,17 +329,33 @@ class QBCMetrics(object):
 
 
 class QBCActiveLearningStrategy(BaseActiveLearningStrategy):
+    name = 'QBC'
 
     def __init__(self, params):
         self._params = params
         self._iteration = 0
 
     def _compute_metric(self, auxilary_predicted_probs, main_predicted_probs):
-        all_probs = np.concatenate(auxilary_predicted_probs + [main_predicted_probs])
-        top_probs = np.argpartition(all_probs, -self._top_number, axis=2)[:, :, -self._top_number:]
+        all_probs = np.stack(auxilary_predicted_probs + [main_predicted_probs])
+        num_models, num_objects, num_classes = all_probs.shape
+        print(all_probs.shape)
+        total_voutes_number = all_probs.shape[0] * self._voute_number
 
         if self._metric == QBCMetrics.VE:
+            model_voute_indexes = np.argpartition(
+                all_probs, -self._voute_number, axis=2
+            )[:, :, -self._voute_number:]
+            aggregated_voutes = np.zeros((num_objects, num_classes))
+            indexes = np.repeat(np.arange(num_objects), self._voute_number)
+            for model_ind in xrange(num_models):
+                aggregated_voutes[indexes, model_voute_indexes[model_ind].reshape(-1)] += 1
+            normed_voutes = aggregated_voutes / total_voutes_number
+            return np.sum(-normed_voutes * np.log(normed_voutes + 1e-5), axis=1)
 
+        if self._metric == QBCMetrics.KL:
+            mean_probs = np.mean(all_probs, axis=0)
+            KL_distances = np.sum(all_probs * np.log(all_probs / mean_probs + 1e-5), axis=-1)
+            return np.mean(KL_distances, axis=0)
 
     def _get_scores(self, probs, labeled_pool, unlabeled_pool):
         if self._iteration == 0:
@@ -348,7 +364,7 @@ class QBCActiveLearningStrategy(BaseActiveLearningStrategy):
                 for _ in xrange(self._models_num)
             ]
             self._models = [
-                train(labeled_pool[indexes], **self._learning_params)
+                train(labeled_pool[indexes], verbose=False, **self._learning_params)
                 for indexes in self._pool_indexes
             ]
 
@@ -356,7 +372,7 @@ class QBCActiveLearningStrategy(BaseActiveLearningStrategy):
             predict_positions(unlabeled_pool, model, return_probs=True)
             for model in self._models
         ]
-        self._compute_metric(auxilary_predicted_probs, probs)
+        return self._compute_metric(auxilary_predicted_probs, probs)
 
     def _update_params(self, probs, labeled_pool, unlabeled_pool, indexes_to_label):
         for pool_ind in xrange(self._models_num):
@@ -374,7 +390,7 @@ class QBCActiveLearningStrategy(BaseActiveLearningStrategy):
             ),
             axis=0
         )
-        self._models[model_ind] = train(train_pool, **self._learning_params)
+        self._models[model_ind] = train(train_pool, verbose=False, **self._learning_params)
 
     @property
     def _models_num(self):
@@ -398,12 +414,12 @@ class QBCActiveLearningStrategy(BaseActiveLearningStrategy):
         return metric
 
     @property
-    def _top_number(self):
-        top_number = self._params.get('top_number', 3)
-        assert isinstance(top_number, int) and top_number > 0, (
-            'top_number should be int and greater than 0. Got: ' + str(top_number)
+    def _voute_number(self):
+        voute_number = self._params.get('voute_number', 3)
+        assert isinstance(voute_number, int) and voute_number > 0, (
+            'voute_number should be int and greater than 0. Got: ' + str(voute_number)
         )
-        return top_number
+        return voute_number
 
 
 STRATEGY_CLASSES = [
@@ -412,6 +428,7 @@ STRATEGY_CLASSES = [
     DiversityActiveLearningStrategy,
     DensityActiveLearningStrategy,
     PositionRelevanceActiveLearningStragety,
+    QBCActiveLearningStrategy,
 ]
 STRATEGIES = {
     cls.name: cls

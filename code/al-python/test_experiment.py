@@ -1,7 +1,7 @@
 import os
 import subprocess
 from results_handling import parse_result_file
-from strategies import check_existance
+from strategies import check_existance, QBCMetrics
 
 
 def _test(strategy, params='{}'):
@@ -25,7 +25,8 @@ def _test(strategy, params='{}'):
             '--strategy_params', params,
         ]
     )
-    process.wait()
+    returncode = process.wait()
+    assert returncode == 0, "al_experiment failed with error"
 
     _, results = parse_result_file(result_file_name)
     os.remove(result_file_name)
@@ -75,3 +76,8 @@ def test_PR():
 
 def test_QBC():
     _test('QBC')
+    _test('QBC', params='{"metric": "' + QBCMetrics.KL + '"}')
+
+
+if __name__ == '__main__':
+    test_QBC()
