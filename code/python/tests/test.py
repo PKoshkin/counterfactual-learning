@@ -176,3 +176,32 @@ def test_classification_evaluation():
     ))
     assert len([line for line in open("metrics/metrics.txt")]) == DAYS_NUMBER - 1
     clear()
+
+
+def test_linear_stacking_evaluation():
+    max_clicks = 3
+    step = 100
+    model = "svr"
+    make_days_data()
+    os.mkdir("res")
+    os.mkdir("metrics")
+    os.mkdir("linear_predictions")
+    os.system("python2 {} --data_folder {} --out_folder {} --model {} linear --step {}".format(
+        os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
+        days_data_path,
+        "linear_predictions",
+        model,
+        step
+    ))
+    os.system("python2 {} --data_folder {} --out_folder res --model catboost linear_stacking --linear_predictions {} --max_clicks {}".format(
+        os.path.join(new_pool_code_path, "calculating_predictions/run.py"),
+        days_data_path,
+        "linear_predictions",
+        max_clicks
+    ))
+    os.system("python2 {} --data_folder {} --predictions_folder res --out_folder metrics --type argmax_classification".format(
+        os.path.join(new_pool_code_path, "evaluation/run_evaluation.py"),
+        days_data_path
+    ))
+    assert len([line for line in open("metrics/metrics.txt")]) == DAYS_NUMBER - 2
+    clear()

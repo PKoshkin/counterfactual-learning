@@ -22,8 +22,6 @@ def calculate_predictions(args):
     else:
         model = args.model_constructor(args.verbose)
 
-    print("type: {}, af {}:".format(args.type, args.additional_features))
-
     has_additionsl_features = args.additional_features is not None
     days_range = range(1, DAYS_NUMBER) if has_additionsl_features else range(DAYS_NUMBER)
     json_filenames = sorted(
