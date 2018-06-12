@@ -4,7 +4,7 @@ import sys
 import numpy as np
 
 sys.path.append("../utils")
-from constants import POSITIONS_VARIANTS
+from constants import POSITIONS_VARIANTS, DAYS_NUMBER
 from json_tools import get_linear_stacked_features, get_labels
 from pool_iterator import pool_iterator
 
@@ -22,29 +22,35 @@ def calculate_predictions(args):
     else:
         model = args.model_constructor(args.verbose)
 
-    if args.additional_features is None:
-        json_filenames = sorted(
-            [os.path.join(args.data_folder, filename) for filename in os.listdir(args.data_folder)],
-            key=lambda filename: int(filename[-6])
-        )
-        args.additional_features = [[] for json_filename in json_filenames]
-    else:
-        json_filenames = sorted(
-            [os.path.join(args.data_folder, filename) for filename in os.listdir(args.data_folder) if filename != "train_0_test_1.txt"],
-            key=lambda filename: int(filename[-6])
-        )
+    print("type: {}, af {}:".format(args.type, args.additional_features))
 
+    has_additionsl_features = args.additional_features is not None
+    days_range = range(1, DAYS_NUMBER) if has_additionsl_features else range(DAYS_NUMBER)
+    json_filenames = sorted(
+        [os.path.join(args.data_folder, "day_{}.json".format(day)) for day in days_range],
+    )
 
     need_position_feature = (not args.type.startswith("binary"))
-    features = [
-        get_linear_stacked_features(
-            pool_iterator(json_filename),
-            linear_prediction,
-            args.first_feature,
-            args.last_feature,
-            need_position_feature
-        ) for linear_prediction, json_filename in zip(args.additional_features, json_filenames)
-    ]
+    if has_additionsl_features:
+        features = [
+            get_linear_stacked_features(
+                pool_iterator(json_filename),
+                linear_prediction,
+                args.first_feature,
+                args.last_feature,
+                need_position_feature
+            ) for linear_prediction, json_filename in zip(args.additional_features, json_filenames)
+        ]
+    else:
+        features = [
+            get_linear_stacked_features(
+                pool_iterator(json_filename),
+                first_feature=args.first_feature,
+                last_feature=args.last_feature,
+                add_positions=need_position_feature
+            ) for json_filename in json_filenames
+        ]
+
     labels = [get_labels(pool_iterator(json_filename), args) for json_filename in json_filenames]
 
     reshaped_positions = np.reshape(np.array(POSITIONS_VARIANTS), [-1, 1])

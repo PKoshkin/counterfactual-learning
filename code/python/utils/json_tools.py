@@ -38,7 +38,7 @@ def make_feature(json, add_positions, first_feature, last_feature):
         return json["factors"][first_feature:last_feature]
 
 
-def get_linear_stacked_features(pool_iterator, results_list, first_feature=0, last_feature=-1, add_positions=True):
+def get_linear_stacked_features(pool_iterator, results_list=[], first_feature=0, last_feature=-1, add_positions=True):
     """
     results_list: list of strings - filenames of files with linear models predictions
     """
