@@ -180,8 +180,8 @@ class BaseDensityBasedActiveLearningStrategy(BaseActiveLearningStrategy):
     def _get_scores(self, probs, labeled_pool, unlabeled_pool):
         if self._closeness is None:
             sys.stderr.write(
-                'closeness is None, make sure this is the first' +
-                'Active Learning Iteration cube with density based strategy\n'
+                'closeness is None, make sure this is the first ' +
+                'active learning iteration with density based strategy\n'
             )
             self._init_closeness(labeled_pool, unlabeled_pool)
 
