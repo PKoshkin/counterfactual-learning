@@ -13,9 +13,9 @@ def evaluate(predictions_folder, data_folder, out_folder, positions_by_predictio
     predictions_filenames = sorted([
         os.path.join(predictions_folder, filename)
         for filename in os.listdir(predictions_folder)
-        if filename != "times.txt"
     ])
-    days = sorted([int(filename[-5]) for filename in predictions_filenames])
+    # prediction filename is like "train_i_test_j" where i and j are int days numbers (hope their len is 1)
+    days = sorted([int(filename[-1]) for filename in predictions_filenames])
     data_filenames = [
         os.path.join(data_folder, "day_{}.json".format(day))
         for day in days

@@ -13,6 +13,7 @@ def run():
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--first_feature", type=int, default=0)
     parser.add_argument("--last_feature", type=int, default=-1)
+    parser.add_argument("--train_day", type=int, required=True)
     parser.set_defaults(additional_features=None)
 
     type_adder = parser.add_subparsers(dest="type")
@@ -24,7 +25,13 @@ def run():
     classification_parser = type_adder.add_parser("classification")
     classification_parser.add_argument("--max_clicks", type=int, required=True)
     classification_parser.set_defaults(func=calculate_predictions)
-    classification_parser.set_defaults(model_constructor=lambda verbose, max_clicks: CatBoostClassifier(verbose=verbose, loss_function='MultiClass', classes_count=max_clicks + 2))
+    classification_parser.set_defaults(
+        model_constructor=lambda verbose, max_clicks: CatBoostClassifier(
+            verbose=verbose,
+            loss_function='MultiClass',
+            classes_count=max_clicks + 2
+        )
+    )
 
     binary_classification_parser = type_adder.add_parser("binary_classification")
     binary_classification_parser.add_argument("--threshold", type=float, required=True)
@@ -44,7 +51,13 @@ def run():
     )
     linear_stacking_parser.add_argument("--max_clicks", type=int, required=True)
     linear_stacking_parser.set_defaults(func=calculate_classification_stacked_on_linear_predictions)
-    linear_stacking_parser.set_defaults(model_constructor=lambda verbose, max_clicks: CatBoostClassifier(verbose=verbose, loss_function='MultiClass', classes_count=max_clicks + 2))
+    linear_stacking_parser.set_defaults(
+        model_constructor=lambda verbose, max_clicks: CatBoostClassifier(
+            verbose=verbose,
+            loss_function='MultiClass',
+            classes_count=max_clicks + 2
+        )
+    )
 
     args = parser.parse_args()
     args.func(args)

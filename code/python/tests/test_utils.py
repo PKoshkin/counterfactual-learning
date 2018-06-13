@@ -22,8 +22,6 @@ def rm_dir(dir_name):
         shutil.rmtree(dir_name)
 
 
-def clear():
-    rm_dir(days_data_path)
-    rm_dir("res")
-    rm_dir("linear_predictions")
-    rm_dir("metrics")
+def clear(folders_list):
+    for folder in folders_list:
+        rm_dir(folder)

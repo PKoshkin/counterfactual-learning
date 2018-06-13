@@ -3,7 +3,6 @@ import os
 import sys
 
 sys.path.append("../utils")
-from constants import DAYS_NUMBER
 from calculate_predictions import calculate_predictions
 
 
@@ -24,10 +23,10 @@ def calculate_classification_stacked_on_linear_predictions(args):
 
     linear_predictions = []
     # linear predictions do not exist for the first day
-    for day in range(1, DAYS_NUMBER):
+    for day in [args.train_day, args.train_day + 1]:
         day_linear_predictions = []
         for results_folder in args.linear_predictions:
-            res_filename = "train_{}_test_{}.txt".format(day - 1, day)
+            res_filename = "train_{}_test_{}".format(day - 1, day)
             day_linear_predictions.append(os.path.join(results_folder, res_filename))
         linear_predictions.append(day_linear_predictions)
 

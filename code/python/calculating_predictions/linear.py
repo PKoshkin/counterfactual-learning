@@ -32,7 +32,8 @@ def calculate_linear(args):
             out_folder,
             "features_from_{}_to_{}".format(args.first_feature, args.last_feature)
         )
-        os.mkdir(args.out_folder)
+        if not os.path.exists(args.out_folder):
+            os.mkdir(args.out_folder)
         calculate_predictions(args)
         args.first_feature += args.step
         args.last_feature += args.step
