@@ -155,7 +155,7 @@ def test_binary_classification():
 
 
 def train_linear_stacking(run_path, days_data_path, res_folder, linear_predictions_folders, max_clicks):
-    for train_day in range(1, DAYS_NUMBER - 1):
+    for train_day in range(DAYS_NUMBER - 1):
         os.system("python2 {} --data_folder {} --out_folder {} --model catboost --train_day {} linear_stacking --linear_predictions {} --max_clicks {}".format(
             run_path,
             days_data_path,

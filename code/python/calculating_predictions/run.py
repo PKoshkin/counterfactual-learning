@@ -60,6 +60,8 @@ def run():
     )
 
     args = parser.parse_args()
+    if args.type == "linear_stacking" and args.train_day == 0:
+        return
     args.func(args)
 
 
