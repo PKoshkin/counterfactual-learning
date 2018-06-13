@@ -1,6 +1,7 @@
 from __future__ import print_function
 import os
 import sys
+import datetime
 import numpy as np
 
 sys.path.append("../utils")
@@ -15,8 +16,10 @@ def calculate_predictions(args):
         data_folder: str. Directory, containing files "day_i.json" where i in range(DAYS_NUMBER).
         out_folder: str. Directory, to save results. DAYS_NUMBER - 1 files will be created.
         type: str. One of ["regression", "classification", "binary_classification", "binary_regression"]
-        additional_features: list of additional features for all days
+        additional_features: list of additional features for all days or None
     """
+    print("\"{}\": preprocesing started.".format(str(datetime.datetime.now())))
+
     if args.type == "classification":
         model = args.model_constructor(args.verbose, args.max_clicks)
     else:
@@ -53,12 +56,16 @@ def calculate_predictions(args):
 
     reshaped_positions = np.reshape(np.array(POSITIONS_VARIANTS), [-1, 1])
 
+    print("\"{}\": preprocesing finished.".format(str(datetime.datetime.now())))
+
     for i in range(1, len(json_filenames)):
         # i - index of test, (i-1) - index of train
         res_filename = "train_{}_test_{}.txt".format(i - 1, i)
         with open(os.path.join(args.out_folder, res_filename), 'w') as res_handler:
+            print("\"{}\": start training on day {}.".format(str(datetime.datetime.now()), i - 1))
             model.fit(features[i - 1], labels[i - 1])
 
+            print("\"{}\": start testing on day {}.".format(str(datetime.datetime.now()), i))
             if args.type == "binary_classification":
                 predictions = model.predict_proba(features[i])
             elif args.type == "binary_regression":
@@ -73,4 +80,6 @@ def calculate_predictions(args):
                     else:
                         current_predictions = model.predict_proba(features_to_predict)
                     predictions.append(current_predictions)
+
+            print("\"{}\": saveing results.".format(str(datetime.datetime.now())))
             np.save(res_handler, np.array(predictions))
