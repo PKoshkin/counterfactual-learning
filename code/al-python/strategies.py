@@ -103,7 +103,7 @@ class ProbaBasedActiveLearningStrategy(BaseActiveLearningStrategy):
             return (proba.T / np.sum(proba, axis=1)).T
 
         if self._proba_normalization == 'softmax':
-            exp = np.exp(proba.T - np.max(proba, axis=1)).T
+            exp = np.exp((proba.T - np.max(proba, axis=1)) / self._temperature).T
             return (exp.T / np.sum(exp, axis=1)).T
 
     @property
@@ -148,10 +148,12 @@ class UncertaintySamplingActiveLearningStrategy(ProbaBasedActiveLearningStrategy
             return 1 - np.max(probs, axis=1)
 
         elif self._uncertainty_metric == 'gini':
+            probs = self._normalize_proba(probs)
             return 1 - np.sum(probs * probs, axis=1)
 
         elif self._uncertainty_metric == 'entropy':
-            return -probs
+            probs = self._normalize_proba(probs)
+            return -np.sum(probs * np.log(probs + 1e-10), axis=1)
 
         elif self._uncertainty_metric == 'delta':
             partitioned_array = np.partition(probs, self._classes_num - 2, axis=1)

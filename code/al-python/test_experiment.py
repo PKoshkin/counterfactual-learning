@@ -64,6 +64,11 @@ def test_diversity_params():
 
 def test_US_params():
     _test('US', '{"uncertainty_metric": "gini"}')
+    _test('US', '{"uncertainty_metric": "gini", "proba_normalization": "softmax"}')
+    _test('US', '{"uncertainty_metric": "gini", "proba_normalization": "softmax", "T": 0.01}')
+    _test('US', '{"uncertainty_metric": "entropy"}')
+    _test('US', '{"uncertainty_metric": "entropy", "proba_normalization": "softmax"}')
+    _test('US', '{"uncertainty_metric": "entropy", "proba_normalization": "softmax", "T": 0.01}')
 
 
 def test_mix_params():
@@ -80,4 +85,4 @@ def test_QBC():
 
 
 if __name__ == '__main__':
-    test_QBC()
+    test_US_params()
