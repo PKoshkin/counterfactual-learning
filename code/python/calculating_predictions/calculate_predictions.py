@@ -35,11 +35,6 @@ def calculate_predictions(args):
 
     need_position_feature = (not args.type.startswith("binary"))
     if args.additional_features is not None:
-
-        print("len(af):", len(args.additional_features))
-        print("af:", args.additional_features)
-
-
         train_features, test_features = [
             get_linear_stacked_features(
                 pool_iterator(json_filename),
