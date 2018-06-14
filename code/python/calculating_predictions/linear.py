@@ -27,7 +27,7 @@ def calculate_linear(args):
     args.threshold = 0
     args.first_feature = 0
     args.last_feature = args.step
-    while args.first_feature < FEATURES_NUMBER:
+    while args.last_feature < FEATURES_NUMBER:
         args.out_folder = os.path.join(
             out_folder,
             "features_from_{}_to_{}".format(args.first_feature, args.last_feature)
