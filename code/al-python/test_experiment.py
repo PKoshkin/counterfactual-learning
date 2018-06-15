@@ -16,6 +16,7 @@ def _test(strategy, params='{}'):
             './al_experiment.py',
             '--results', result_file_name,
             '--train_pool', train_pool_path,
+            '--val_pool', test_pool_path,
             '--test_pool', test_pool_path,
             '--strategy', strategy,
             '--initial_size', '5',

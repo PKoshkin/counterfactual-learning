@@ -1,11 +1,20 @@
+import matplotlib
+matplotlib.use('Agg')
+
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as ss
+import argparse
+import json
 
 from math import ceil
 from collections import defaultdict
 from frozendict import frozendict
 
+from strategies import STRATEGIES
+
+
+RANDOM_NAME = 'random'
 
 ALGO_KEY = 'algo'
 STRATEGY_KEY = 'strategy'
@@ -14,14 +23,21 @@ INITIAL_SIZE_KEY = 'initial size'
 MAX_QUERIES_KEY = 'max queries'
 TRAIN_SIZE_KEY = 'train pool size'
 TEST_SIZE_KEY = 'test pool size'
+PARAMS_KEY = 'strategy_params'
 
 ERROR_LINE = "error!!!"
 START_LINE = "Algorithm with following features was applied:"
 
 STRATEGY_COLORS = {
-    "US": 'blue',
-    "random": 'orange',
-    "diversity": 'green',
+    'US': 'blue',
+    'random': 'orange',
+    'diversity': 'lightgreen',
+    'US-density': 'pink',
+    'density': 'black',
+    'diversity-density': 'red',
+    'random_part_0.1': 'red',
+    'random_part_0.3': 'blue',
+    'random_part_0.5': 'green',
 }
 
 
@@ -32,20 +48,17 @@ class IncorrectParams(Exception):
 
 
 def _get_color(name):
-    for key, color in STRATEGY_COLORS.items():
-        if name.startswith(key):
-            return color
-    return None
+    return STRATEGY_COLORS.get(name.split('_')[0])
 
 
 def _get_params(results_lines, line_ind):
     algo_params = {}
 
     while results_lines[line_ind] != "":
-        print(results_lines[line_ind])
         splited = results_lines[line_ind].split(': ')
         key = splited[0]
         value = ': '.join(splited[1:])
+
         if value.isdigit():
             algo_params[key] = int(value)
         else:
@@ -63,15 +76,21 @@ def _get_batches_num(params):
 
 
 def _get_name(params, keys=None):
-    if keys is None:
-        keys = [STRATEGY_KEY]
-    try:
-        return " ".join([
-            (key + '_' if key != STRATEGY_KEY else "") + str(params[key])
-            for key in keys
-        ])
-    except Exception as e:
-        raise IncorrectParams(keys)
+    result = params[STRATEGY_KEY]
+    if keys is not None:
+        strategy_params = json.loads(params[PARAMS_KEY])
+        for param, param_value in strategy_params.items():
+            if param in STRATEGIES:
+                strategy = param
+                curr_strategy_params = param_value
+                for param, param_value in curr_strategy_params.items():
+                    if param in keys:
+                        result += '.' + strategy + '_' + param + '_' + str(param_value)
+            else:
+                if param in keys:
+                    result += '.' + param + '_' + str(param_value)
+
+    return result
 
 
 def _skip_blank(results_lines, line_ind):
@@ -80,11 +99,7 @@ def _skip_blank(results_lines, line_ind):
     return line_ind
 
 
-def parse_result_file(filename):
-    with open(filename) as results_file:
-        results_lines = [line.strip() for line in open(filename)]
-
-    line_ind = _skip_blank(results_lines, 0)
+def parse_result_block(results_lines, line_ind):
     if results_lines[line_ind] == START_LINE:
         line_ind += 1
     line_ind = _skip_blank(results_lines, line_ind)
@@ -97,60 +112,58 @@ def parse_result_file(filename):
         results.append(float(results_lines[line_ind]))
         line_ind += 1
 
-    return algo_params, np.array(results)
+    return algo_params, np.array(results), line_ind
 
 
-def get_plot_data(filenames, result_keys_for_name=None):
+def get_plot_data(filename, result_keys_for_name=None, max_size_draw=None, strategies_to_data=None):
+    with open(filename) as results_file:
+        results_lines = [line.strip() for line in open(filename)]
+
     results = {}
-    for filename in filenames:
-        params, result = parse_result_file(filename)
+    line_ind = _skip_blank(results_lines, 0)
+
+    while line_ind < len(results_lines):
+        params, result, line_ind = parse_result_block(results_lines, line_ind)
+        if strategies_to_data is not None and params[STRATEGY_KEY] not in strategies_to_data:
+            continue
         name = _get_name(params, result_keys_for_name)
         if name not in results:
             results[name] = np.array([result])
         else:
             results[name] = np.concatenate([[result], results[name]], axis=0)
 
+        line_ind = _skip_blank(results_lines, line_ind)
+
     plot_data = {}
     for name, metrics in results.items():
         x_start = float(params[INITIAL_SIZE_KEY]) / params[TRAIN_SIZE_KEY]
         x_end = float(params[MAX_QUERIES_KEY]) / params[TRAIN_SIZE_KEY]
-        x = np.linspace(x_start, x_end, len(metrics))
+        x_batch = float(params[BATCH_SIZE_KEY]) / params[TRAIN_SIZE_KEY]
+        if max_size_draw is not None:
+            x_end = min(x_end, float(max_size_draw) / params[TRAIN_SIZE_KEY])
+        x = np.arange(x_start, x_end, x_batch)
 
         plot_data[name] = {
             'x': x,
-            'mean': np.mean(metrics, axis=0),
-            'std': np.std(metrics, axis=0) / np.sqrt(len(metrics))
+            'mean': np.mean(metrics, axis=0)[:len(x)],
+            'std': np.std(metrics, axis=0)[:len(x)] / np.sqrt(len(metrics))
         }
 
     return plot_data
 
 
-def draw_plots(
-        plot_data,
-        fontsize=10,
-        thick_num=None,
-        title="Active learning algorithms' performace",
-        xlabel="Training instances share",
-        ylabel="Relevance",
-        image_path=None,
-        *args,
-        **kwargs):
-    for name, data in plot_data.items():
-        if thick_num is None:
-            errorevery = 1
-        else:
-            errorevery = len(data['x']) // thick_num
+def _add_postfix(path, postfix):
+    names = path.split('.')
+    if len(names) == 1:
+        name_ind = 0
+    else:
+        name_ind = -2
+    names[name_ind] += '_' + postfix
+    return '.'.join(names)
 
-        plt.errorbar(
-            data['x'],
-            data['mean'],
-            color=_get_color(name),
-            yerr=data['std'],
-            label=name,
-            errorevery=errorevery,
-            *args, **kwargs
-        )
 
+def _finilize_and_save(title, xlabel, ylabel, fontsize, image_path, postfix):
+    title += ' ' + postfix
     plt.title(title, fontsize=fontsize)
     plt.xlabel(xlabel, fontsize=fontsize)
     plt.ylabel(ylabel, fontsize=fontsize)
@@ -158,7 +171,51 @@ def draw_plots(
     if image_path is None:
         plt.show()
     else:
+        image_path = _add_postfix(image_path, postfix)
         plt.savefig(image_path, bbox_inches='tight')
+
+
+def _draw_plot(name, data, thick_num, *args, **kwargs):
+    if thick_num is None:
+        errorevery = 1
+    else:
+        errorevery = len(data['x']) // thick_num
+    plt.errorbar(
+        data['x'],
+        data['mean'],
+        color=_get_color(name),
+        yerr=data['std'],
+        label=name,
+        errorevery=errorevery,
+        *args, **kwargs
+    )
+
+
+def draw_plots(
+        plot_data,
+        compare_with_random,
+        title,
+        fontsize=10,
+        thick_num=None,
+        xlabel="Training instances share",
+        ylabel="Relevance",
+        image_path=None,
+        *args,
+        **kwargs):
+
+    for name, data in plot_data.items():
+        if compare_with_random and name == RANDOM_NAME:
+            continue
+        if compare_with_random:
+            print(name)
+            plt.figure()
+        _draw_plot(name, data, thick_num, *args, **kwargs)
+        if compare_with_random:
+            _draw_plot(RANDOM_NAME, plot_data[RANDOM_NAME], thick_num, *args, **kwargs)
+            _finilize_and_save(title, xlabel, ylabel, fontsize, image_path, name)
+
+    if not compare_with_random:
+        _finilize_and_save(title, xlabel, ylabel, fontsize, image_path, '')
 
 
 def mannwhitneyu_test(results, key_a, key_b, pvalue_bound=0.05):
@@ -189,3 +246,67 @@ def print_stats(results, keys=None):
             'Mean: ' + str(value[-1][:, -1].mean()) + '\n' +
             'Std: ' + str(value[-1][:, -1].std(ddof=1)) + '\n'
         )
+
+
+def _add_common_params(parser):
+    parser.add_argument('--image_path', default='plots.png')
+    parser.add_argument('--key_for_name', nargs='*')
+    parser.add_argument('--max_size_draw')
+    parser.add_argument('--strategies_to_data', nargs='+')
+    parser.add_argument('--title', default='Active learning algorithms\' perfomance')
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    mode_adder = parser.add_subparsers(dest='mode')
+
+    single_result_parser = mode_adder.add_parser('single')
+    single_result_parser.add_argument('--results_path', default='results.txt')
+    single_result_parser.add_argument('--compare_with_random', action='store_true')
+    _add_common_params(single_result_parser)
+
+    many_results_parser = mode_adder.add_parser('many')
+    many_results_parser.add_argument('--results_paths', nargs='+', required=True)
+    many_results_parser.add_argument('--names', nargs='+', required=True)
+    _add_common_params(many_results_parser)
+
+    args = parser.parse_args()
+    if args.mode == 'many':
+        if len(args.results_paths) != len(args.names):
+            parser.error('results_paths number should be equal to names number')
+
+    return args
+
+
+def main():
+    args = parse_args()
+
+    if args.mode == 'single':
+        plot_data = get_plot_data(
+            args.results_path,
+            args.key_for_name,
+            max_size_draw=args.max_size_draw,
+            strategies_to_data=args.strategies_to_data,
+        )
+        draw_plots(plot_data, args.compare_with_random, args.title, image_path=args.image_path)
+    if args.mode == 'many':
+        plot_datas = defaultdict(dict)
+        for result_path, result_name in zip(args.results_paths, args.names):
+            plot_data = get_plot_data(
+                result_path,
+                args.key_for_name,
+                max_size_draw=args.max_size_draw,
+                strategies_to_data=args.strategies_to_data,
+            )
+            print(result_name)
+            for name, data in plot_data.items():
+                print(name)
+                plot_datas[name][result_name] = data
+
+        for name, plot_data in plot_datas.items():
+            title = args.title + ' ' + name
+            draw_plots(plot_data, False, title, image_path=_add_postfix(args.image_path, name))
+
+
+if __name__ == '__main__':
+    main()

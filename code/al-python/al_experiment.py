@@ -15,6 +15,7 @@ from strategies import get_strategy, STRATEGIES
 def _run_al_experiment(
     labeled_pool,
     unlabeled_pool,
+    val_pool,
     test_pool,
     algo,
     strategy_name,
@@ -35,15 +36,18 @@ def _run_al_experiment(
         "initial size": len(labeled_pool),
         "max queries": end_size,
         "train pool size": len(labeled_pool) + len(unlabeled_pool),
+        "val pool size": len(val_pool),
         "test pool size": len(test_pool),
     }
     result = "Algorithm with following features was applied:\n"
     result += '\n'.join(["{}: {}".format(key, value) for key, value in params.items()])
 
-    result += '\n\n'
+    result += '\n'
+
+    classifiers = []
+    metrics = []
 
     for iteration_ind in xrange(iters_num + 1):
-
         log('begin {} iteration\n'.format(iteration_ind))
         classifier = train(labeled_pool, **classifier_params)
 
@@ -53,9 +57,19 @@ def _run_al_experiment(
             labeled_pool = np.concatenate([labeled_pool, unlabeled_pool[indexes]], axis=0)
             unlabeled_pool = np.delete(unlabeled_pool, indexes, axis=0)
 
-        predicted_positions = predict_positions(test_pool, classifier)
-        metric = calculate_metric(predicted_positions, test_pool)
+        predicted_positions = predict_positions(val_pool, classifier)
+        metric = calculate_metric(predicted_positions, val_pool)
+
         result += str(metric) + '\n'
+        metrics.append(metric)
+        classifiers.append(classifier)
+
+    best_iteration = np.argmax(metrics)
+    best_classifier = classifiers[best_iteration]
+    predicted_positions = predict_positions(test_pool, classifier)
+    final_metric = calculate_metric(predicted_positions, test_pool)
+    result += 'best iteration: ' + str(best_iteration) + '\n'
+    result += 'metric on test using classifier from best iteration: ' + str(final_metric) + '\n'
 
     return result
 
@@ -70,6 +84,7 @@ def _get_initial_pools(train_pool, random_seed, initial_size):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_pool', required=True)
+    parser.add_argument('--val_pool', required=True)
     parser.add_argument('--test_pool', required=True)
     parser.add_argument('--random_seed', required=True, type=int)
     parser.add_argument('--strategy', required=True)
@@ -86,6 +101,7 @@ def parse_args():
 def main():
     args = parse_args()
     train_pool = read_csv(args.train_pool)
+    val_pool = read_csv(args.val_pool)
     test_pool = read_csv(args.test_pool)
     labeled_pool, unlabeled_pool = _get_initial_pools(
         train_pool,
@@ -98,6 +114,7 @@ def main():
     result = _run_al_experiment(
         labeled_pool,
         unlabeled_pool,
+        val_pool,
         test_pool,
         'pool-based',
         args.strategy,
