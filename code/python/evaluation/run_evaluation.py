@@ -20,7 +20,8 @@ def double_argmax_positions(predictions):
 
 def weighted_positions(predictions):
     repeated_arange = np.repeat([np.arange(np.shape(predictions)[1])], np.shape(predictions)[0], axis=0)
-    return np.array(POSITIONS_VARIANTS)[np.round(np.sum(predictions * repeated_arange, axis=1) / np.sum(predictions, axis=1))]
+    indices = np.round(np.sum(predictions * repeated_arange, axis=1) / np.sum(predictions, axis=1)).astype('int')
+    return np.array(POSITIONS_VARIANTS)[indices]
 
 
 def expect_weighted_positions(predictions):
