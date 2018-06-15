@@ -1,6 +1,9 @@
 import argparse
 import numpy as np
 from evaluate import evaluate
+import sys
+sys.path.append("../utils")
+from constants import POSITIONS_VARIANTS
 
 
 class ArgumentException(Exception):
@@ -8,16 +11,16 @@ class ArgumentException(Exception):
 
 
 def argmax_positions(predictions):
-    return np.argmax(predictions, axis=-1)
+    return np.array(POSITIONS_VARIANTS)[np.argmax(predictions, axis=-1)]
 
 
 def double_argmax_positions(predictions):
-    return np.argmax(np.argmax(predictions, axis=-1), axis=-1)
+    return np.array(POSITIONS_VARIANTS)[np.argmax(np.argmax(predictions, axis=-1), axis=-1)]
 
 
 def weighted_positions(predictions):
     repeated_arange = np.repeat([np.arange(np.shape(predictions)[1])], np.shape(predictions)[0], axis=0)
-    return np.round(np.sum(predictions * repeated_arange, axis=1) / np.sum(predictions, axis=1))
+    return np.array(POSITIONS_VARIANTS)[np.round(np.sum(predictions * repeated_arange, axis=1) / np.sum(predictions, axis=1))]
 
 
 def expect_weighted_positions(predictions):
