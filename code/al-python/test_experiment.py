@@ -1,6 +1,6 @@
 import os
 import subprocess
-from results_handling import parse_result_file
+from results_handling import get_results
 from strategies import check_existance, QBCMetrics
 
 
@@ -19,8 +19,8 @@ def _test(strategy, params='{}'):
             '--val_pool', test_pool_path,
             '--test_pool', test_pool_path,
             '--strategy', strategy,
-            '--initial_size', '5',
-            '--batch_size', '20',
+            '--initial_size', str(5. / 55),
+            '--batch_size', str(20. / 55),
             '--random_seed', '0',
             '--train_steps', '20',
             '--strategy_params', params,
@@ -29,9 +29,20 @@ def _test(strategy, params='{}'):
     returncode = process.wait()
     assert returncode == 0, "al_experiment failed with error"
 
-    _, results = parse_result_file(result_file_name)
+    results, _ = get_results(result_file_name)
     os.remove(result_file_name)
-    assert len(results) == 4
+    best_iter = results[strategy][2]
+    final_metric = results[strategy][1]
+    assert len(best_iter) == 1
+    assert len(final_metric) == 1
+    best_iter = best_iter[0]
+    final_metric = final_metric[0]
+    assert isinstance(best_iter, int)
+    assert isinstance(final_metric, float)
+    assert len(results[strategy][0]) == 1
+    assert len(results[strategy][0][0]) == 4
+    assert len(results[strategy][1]) == 1
+    assert results[strategy][0][0][best_iter] == final_metric
 
 
 def test_US():
@@ -86,4 +97,4 @@ def test_QBC():
 
 
 if __name__ == '__main__':
-    test_US_params()
+    test_US()

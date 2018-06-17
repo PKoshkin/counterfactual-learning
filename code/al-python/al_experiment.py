@@ -25,8 +25,12 @@ def _run_al_experiment(
     end_size,
     **classifier_params
 ):
+    train_len = len(unlabeled_pool) + len(labeled_pool)
+    batch_size = int(ceil(batch_size * train_len))
     if end_size == -1:
-        end_size = len(unlabeled_pool) + len(labeled_pool)
+        end_size = train_len
+    else:
+        end_size = int(ceil(end_size * train_len))
     iters_num = int(ceil((float(end_size - len(labeled_pool))) / batch_size))
     params = {
         "algo": algo,
@@ -42,7 +46,7 @@ def _run_al_experiment(
     result = "Algorithm with following features was applied:\n"
     result += '\n'.join(["{}: {}".format(key, value) for key, value in params.items()])
 
-    result += '\n'
+    result += '\n\n'
 
     classifiers = []
     metrics = []
@@ -66,11 +70,12 @@ def _run_al_experiment(
 
     best_iteration = np.argmax(metrics)
     best_classifier = classifiers[best_iteration]
-    predicted_positions = predict_positions(test_pool, classifier)
+    predicted_positions = predict_positions(test_pool, best_classifier)
     final_metric = calculate_metric(predicted_positions, test_pool)
     result += 'best iteration: ' + str(best_iteration) + '\n'
     result += 'metric on test using classifier from best iteration: ' + str(final_metric) + '\n'
-
+    result += '\n'
+    print(result)
     return result
 
 
@@ -88,9 +93,9 @@ def parse_args():
     parser.add_argument('--test_pool', required=True)
     parser.add_argument('--random_seed', required=True, type=int)
     parser.add_argument('--strategy', required=True)
-    parser.add_argument('--initial_size', required=True, type=int)
-    parser.add_argument('--batch_size', required=True, type=int)
-    parser.add_argument('--end_size', default=-1, type=int)
+    parser.add_argument('--initial_size', required=True, type=float)
+    parser.add_argument('--batch_size', required=True, type=float)
+    parser.add_argument('--end_size', default=-1, type=float)
     parser.add_argument('--strategy_params', type=json.loads, default={})
     parser.add_argument('--results', required=True)
     parser.add_argument('--train_steps', type=int)
@@ -103,10 +108,11 @@ def main():
     train_pool = read_csv(args.train_pool)
     val_pool = read_csv(args.val_pool)
     test_pool = read_csv(args.test_pool)
+    initial_size = int(ceil(args.initial_size * len(train_pool)))
     labeled_pool, unlabeled_pool = _get_initial_pools(
         train_pool,
         args.random_seed,
-        args.initial_size
+        initial_size
     )
 
     strategy = get_strategy(args.strategy, args.strategy_params)

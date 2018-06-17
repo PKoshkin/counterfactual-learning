@@ -27,6 +27,8 @@ PARAMS_KEY = 'strategy_params'
 
 ERROR_LINE = "error!!!"
 START_LINE = "Algorithm with following features was applied:"
+BEGIN_BEST_ITER = 'best iteration'
+BEGIN_FINAL_METRIC = 'metric on test using classifier from best iteration'
 
 STRATEGY_COLORS = {
     'US': 'blue',
@@ -108,14 +110,22 @@ def parse_result_block(results_lines, line_ind):
 
     results = []
 
-    while line_ind < len(results_lines) and results_lines[line_ind] != "":
+    while not results_lines[line_ind].startswith(BEGIN_BEST_ITER):
         results.append(float(results_lines[line_ind]))
         line_ind += 1
 
-    return algo_params, np.array(results), line_ind
+    assert results_lines[line_ind].startswith(BEGIN_BEST_ITER)
+    best_iter = int(results_lines[line_ind].split(': ')[1])
+    line_ind += 1
+
+    assert results_lines[line_ind].startswith(BEGIN_FINAL_METRIC)
+    final_metric = float(results_lines[line_ind].split(': ')[1])
+    line_ind += 1
+
+    return algo_params, np.array(results), line_ind, best_iter, final_metric
 
 
-def get_plot_data(filename, result_keys_for_name=None, max_size_draw=None, strategies_to_data=None):
+def get_results(filename, strategies_to_data=None, result_keys_for_name=None):
     with open(filename) as results_file:
         results_lines = [line.strip() for line in open(filename)]
 
@@ -123,19 +133,31 @@ def get_plot_data(filename, result_keys_for_name=None, max_size_draw=None, strat
     line_ind = _skip_blank(results_lines, 0)
 
     while line_ind < len(results_lines):
-        params, result, line_ind = parse_result_block(results_lines, line_ind)
+        params, result, line_ind, best_iter, final_metric = parse_result_block(
+            results_lines, line_ind
+        )
         if strategies_to_data is not None and params[STRATEGY_KEY] not in strategies_to_data:
             continue
         name = _get_name(params, result_keys_for_name)
         if name not in results:
-            results[name] = np.array([result])
+            results[name] = (np.array([result]), [final_metric], [best_iter])
         else:
-            results[name] = np.concatenate([[result], results[name]], axis=0)
+            results[name][0] = np.concatenate([[result], results[name][0]], axis=0)
+            results[name][1].append(final_metric)
+            results[name][2].append(best_iter)
 
         line_ind = _skip_blank(results_lines, line_ind)
 
+    return results, params
+
+
+def get_plot_data(
+        filename, result_keys_for_name=None, max_size_draw=None, strategies_to_data=None,
+        results=None, params=None):
+    if results is None or params is None:
+        results, params = get_results(filename, strategies_to_data, result_keys_for_name)
     plot_data = {}
-    for name, metrics in results.items():
+    for name, (metrics, _, _) in results.items():
         x_start = float(params[INITIAL_SIZE_KEY]) / params[TRAIN_SIZE_KEY]
         x_end = float(params[MAX_QUERIES_KEY]) / params[TRAIN_SIZE_KEY]
         x_batch = float(params[BATCH_SIZE_KEY]) / params[TRAIN_SIZE_KEY]
