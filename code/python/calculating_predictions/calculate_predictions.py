@@ -58,6 +58,8 @@ def calculate_predictions(args):
     train_features = np.concatenate(features[args.train_days], axis=0)
     train_labels = np.concatenate(labels[args.train_days], axis=0)
 
+    log("train features shape: {}".format(np.shape(train_features)))
+
     test_features = features[args.test_day]
 
     if args.validation_day is not None:
@@ -80,6 +82,8 @@ def calculate_predictions(args):
     else:
         log("using fit without validation")
         model.fit(train_features, train_labels)
+
+    log("built {} trees".format(model.tree_count_))
 
     log("start predicting on day {}".format(args.test_day))
     if args.type == "binary_classification":
