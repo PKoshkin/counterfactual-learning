@@ -17,7 +17,7 @@ def evaluate(predictions_folder, data_folder, out_folder, positions_by_predictio
     ])
     print("\"{}\": predictions_filenames: {}".format(str(datetime.datetime.now()), predictions_filenames))
     # prediction filename is like "train_i_test_j" where i and j are int days numbers (hope their len is 1)
-    days = sorted([int(filename[-1]) for filename in predictions_filenames])
+    days = sorted([int(filename[-5]) for filename in predictions_filenames])
     print("\"{}\": will evaluate days: {}".format(str(datetime.datetime.now()), days))
     data_filenames = [
         os.path.join(data_folder, "day_{}.json".format(day))
