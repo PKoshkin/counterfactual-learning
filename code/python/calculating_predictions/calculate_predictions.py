@@ -19,8 +19,8 @@ def calculate_predictions(args):
         type: str. One of ["regression", "classification", "binary_classification", "binary_regression"]
         model_constructor: callable. Takes verbose param. If type == "classification" also takes max_clicks param.
         additional_features: list of additional features for train and test day or None.
-        train_days: list of ints. Numbers of day to train on.
-        test_day: int. Number of dat to test on.
+        train_days: list of ints. Numbers of days to train on.
+        test_days: list of ints. Numbers of days to test on.
         validation_day: int or None. Number of day to validate on.
     """
     log("preprocesing started")
@@ -33,37 +33,33 @@ def calculate_predictions(args):
     json_filenames = [os.path.join(args.data_folder, "day_{}.json".format(day)) for day in range(DAYS_NUMBER)]
 
     need_position_feature = not args.type.startswith("binary")
-    if args.additional_features is not None:
-        features = np.array([
-            get_linear_stacked_features(
-                pool_iterator(json_filename),
-                linear_prediction,
-                args.first_feature,
-                args.last_feature,
-                need_position_feature
-            ) for linear_prediction, json_filename in zip(args.additional_features, json_filenames)
-        ])
-    else:
-        features = np.array([
-            get_linear_stacked_features(
-                pool_iterator(json_filename),
+
+    def get_features(day):
+        if args.additional_features is not None:
+            return get_linear_stacked_features(
+                pool_iterator(json_filenames[day]),
+                args.additional_features[day],
                 first_feature=args.first_feature,
                 last_feature=args.last_feature,
                 add_positions=need_position_feature
-            ) for json_filename in json_filenames
-        ])
+            )
+        else:
+            return get_linear_stacked_features(
+                pool_iterator(json_filenames[day]),
+                first_feature=args.first_feature,
+                last_feature=args.last_feature,
+                add_positions=need_position_feature
+            )
 
-    labels = np.array([get_labels(pool_iterator(json_filename), args) for json_filename in json_filenames])
-
-    train_features = np.concatenate(features[args.train_days], axis=0)
-    train_labels = np.concatenate(labels[args.train_days], axis=0)
-
+    train_features = np.concatenate([get_features(day) for day in args.train_days], axis=0)
+    test_features = [get_features(test_day) for test_day in args.test_days]
     log("train features shape: {}".format(np.shape(train_features)))
 
-    test_features = features[args.test_day]
+    labels = np.array([get_labels(pool_iterator(json_filename), args) for json_filename in json_filenames])
+    train_labels = np.concatenate(labels[args.train_days], axis=0)
 
     if args.validation_day is not None:
-        validation_features = features[args.validation_day]
+        validation_features = get_features(args.validation_day)
         validation_labels = labels[args.validation_day]
         validation_pool = Pool(validation_features, validation_labels)
 
@@ -83,28 +79,30 @@ def calculate_predictions(args):
         log("using fit without validation")
         model.fit(train_features, train_labels)
 
-    log("built {} trees".format(model.tree_count_))
+    if "tree_count_" in dir(model):
+        log("built {} trees".format(model.tree_count_))
 
-    log("start predicting on day {}".format(args.test_day))
-    if args.type == "binary_classification":
-        predictions = model.predict_proba(test_features)
-    elif args.type == "binary_regression":
-        predictions = model.predict(test_features)
-    else:
-        reshaped_positions = np.reshape(np.array(POSITIONS_VARIANTS), [-1, 1])
-        predictions = []
-        for feature in test_features:
-            repeated_feature = np.repeat(np.array([feature[1:]]), len(POSITIONS_VARIANTS), axis=0)
-            features_to_predict = np.concatenate([reshaped_positions, repeated_feature], axis=1)
-            if args.type == "regression":
-                current_predictions = model.predict(features_to_predict)
-            else:
-                current_predictions = model.predict_proba(features_to_predict)
-            predictions.append(current_predictions)
+    reshaped_positions = np.reshape(np.array(POSITIONS_VARIANTS), [-1, 1])
+    for i, test_day in enumerate(args.test_days):
+        log("start predicting on day {}".format(test_day))
+        if args.type == "binary_classification":
+            predictions = model.predict_proba(test_features[i])
+        elif args.type == "binary_regression":
+            predictions = model.predict(test_features[i])
+        else:
+            predictions = []
+            for feature in test_features[i]:
+                repeated_feature = np.repeat(np.array([feature[1:]]), len(POSITIONS_VARIANTS), axis=0)
+                features_to_predict = np.concatenate([reshaped_positions, repeated_feature], axis=1)
+                if args.type == "regression":
+                    current_predictions = model.predict(features_to_predict)
+                else:
+                    current_predictions = model.predict_proba(features_to_predict)
+                predictions.append(current_predictions)
 
-    log("saveing results")
-    np.save(
-        os.path.join(args.out_folder, "train_{}_test_{}".format("_".join(map(str, args.train_days)), args.test_day)),
-        np.array(predictions)
-    )
-    log("results saved")
+        log("saveing results")
+        np.save(
+            os.path.join(args.out_folder, "train_{}_test_{}".format("_".join(map(str, args.train_days)), test_day)),
+            np.array(predictions)
+        )
+        log("results saved")
