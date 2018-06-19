@@ -1,6 +1,7 @@
 import numpy as np
-import sys
-sys.path.append("../utils")
+import pickle
+from log import log
+from constants import POSITIONS_VARIANTS, FEATURES_NUMBER
 
 
 def get_from_pool(pool_iterator, name, constructor=float):
@@ -31,28 +32,67 @@ def get_labels(pool_iterator, args):
         raise ValueError("Wrong type {}".format(args.type))
 
 
-def make_feature(json, add_positions, first_feature, last_feature):
-    if add_positions:
+def make_feature(json, add_positions, first_feature, last_feature, different_positions):
+    assert different_positions or add_positions
+    if different_positions:
+        return [
+            [prediction] + json["factors"][first_feature:last_feature]
+            for prediction in POSITIONS_VARIANTS
+        ]
+    elif add_positions:
         return [json["pos"]] + json["factors"][first_feature:last_feature]
     else:
         return json["factors"][first_feature:last_feature]
 
 
-def get_linear_stacked_features(pool_iterator, results_list=[], first_feature=0, last_feature=-1, add_positions=True):
+def get_linear_stacked_features(pool_iterator,
+                                models_list=[],
+                                first_feature=0,
+                                last_feature=-1,
+                                add_positions=True,
+                                different_positions=False,
+                                verose=False):
     """
-    results_list: list of strings - filenames of files with linear models predictions
+    models_list: list of strings - filenames of files with models to predict features
     """
     assert first_feature >= 0
     if last_feature != -1:
         assert first_feature < last_feature
     assert type(add_positions) == bool
 
-    results = [np.load(filename) for filename in results_list]
-    features = []
-    for i, item in enumerate(pool_iterator):
-        feature = make_feature(item, add_positions, first_feature, last_feature)
-        for result in results:
-            # take zero prediction (pos=0) to ignore position
-            feature.append(result[i])
-        features.append(feature)
-    return np.array(features)
+    features = np.array([
+        make_feature(item, add_positions, first_feature, last_feature, different_positions)
+        for item in pool_iterator
+    ])
+    if different_positions:
+        features_num = FEATURES_NUMBER if last_feature == -1 else last_feature - first_feature
+        if add_positions:
+            features_num += 1
+        features = np.reshape(features, [-1, features_num])
+    predictions = []
+    for filename in models_list:
+        model = pickle.load(open(filename, "rb"))
+        # filename has template:
+        #    model_all_features_trained_on_days
+        #    or
+        #    model_features_from_x_to_y_trained_on_days
+        if filename.find("from") == -1:
+            if verose:
+                log("adding model {} prediction on all features".format(filename))
+            features_to_predict = features
+        else:
+            from_index = filename.find("_from_")
+            trained_index = filename.find("_trained_")
+            to_index = filename.find("_to_")
+            low = int(filename[(from_index + 6):to_index])
+            hight = int(filename[(to_index + 4):trained_index])
+            if verose:
+                log("adding model {} prediction on features from {} to {}".format(filename, low, hight))
+            if add_positions:
+                features_to_predict = np.concatenate([features[:, 0:1], features[:, (low + 1):(hight + 1)]], axis=1)
+            else:
+                features_to_predict = features[:, low:hight]
+
+        prediction = model.predict(features_to_predict)
+        predictions.append(np.reshape(prediction, (-1, 1)))
+    return np.concatenate([features] + predictions, axis=1)
