@@ -18,7 +18,8 @@ def calculate_predictions(args):
         out_folder: str. Directory, to save results. 1 file will be created.
         type: str. One of ["regression", "classification", "binary_classification", "binary_regression"]
         model_constructor: callable. Takes verbose param. If type == "classification" also takes max_clicks param.
-        additional_features: list of additional features for train and test day or None.
+        additional_features: (dict day -> additional features for day) or None.
+        labels_to_substruct: (dict day -> targets to substruct for day) or None.
         train_days: list of ints. Numbers of days to train on.
         test_days: list of ints. Numbers of days to test on.
         validation_day: int or None. Number of day to validate on.
@@ -34,7 +35,7 @@ def calculate_predictions(args):
 
     need_position_feature = not args.type.startswith("binary")
 
-    def get_features(day):
+    def get_day_features(day):
         if args.additional_features is not None:
             return get_linear_stacked_features(
                 pool_iterator(json_filenames[day]),
@@ -51,17 +52,23 @@ def calculate_predictions(args):
                 add_positions=need_position_feature
             )
 
-    train_features = np.concatenate([get_features(day) for day in args.train_days], axis=0)
-    test_features = [get_features(test_day) for test_day in args.test_days]
+    train_features = np.concatenate([get_day_features(day) for day in args.train_days], axis=0)
+    test_features = [get_day_features(test_day) for test_day in args.test_days]
     log("train features shape: {}".format(np.shape(train_features)))
 
-    labels = np.array([get_labels(pool_iterator(json_filename), args) for json_filename in json_filenames])
-    train_labels = np.concatenate(labels[args.train_days], axis=0)
+    def get_day_labels(day):
+        if args.labels_to_substruct is not None:
+            labels_to_substruct = np.load(args.labels_to_substruct[day])
+            day_labels = get_labels(pool_iterator(json_filenames[day]), args)
+            assert np.shape(labels_to_substruct) == np.shape(day_labels)
+            return day_labels - labels_to_substruct
+        else:
+            return get_labels(pool_iterator(json_filenames[day]), args)
+
+    train_labels = np.concatenate([get_day_labels(day) for day in args.train_days], axis=0)
 
     if args.validation_day is not None:
-        validation_features = get_features(args.validation_day)
-        validation_labels = labels[args.validation_day]
-        validation_pool = Pool(validation_features, validation_labels)
+        validation_pool = Pool(get_day_features(args.validation_day), get_day_labels(args.validation_day))
 
     log("preprocesing finished")
     log("start training on days {}".format(args.train_days))
