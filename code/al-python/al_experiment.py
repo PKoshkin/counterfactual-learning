@@ -25,6 +25,7 @@ def _run_al_experiment(
     end_size,
     **classifier_params
 ):
+    log('Starting experiment...\n')
     train_len = len(unlabeled_pool) + len(labeled_pool)
     batch_size = int(ceil(batch_size * train_len))
     if end_size == -1:
@@ -46,36 +47,44 @@ def _run_al_experiment(
     result = "Algorithm with following features was applied:\n"
     result += '\n'.join(["{}: {}".format(key, value) for key, value in params.items()])
 
-    result += '\n\n'
+    result += '\n'
 
-    classifiers = []
-    metrics = []
+    val_metrics = []
+    test_metrics = []
 
     for iteration_ind in xrange(iters_num + 1):
-        log('begin {} iteration\n'.format(iteration_ind))
+        print(iters_num)
+        log('begin {} iteration.\n'.format(iteration_ind))
+        log('Training model...\n')
         classifier = train(labeled_pool, **classifier_params)
 
         if iteration_ind < iters_num:
+            log('Selecting batch to label...\n')
             probs = predict_positions(unlabeled_pool, classifier, return_probs=True)
             indexes = strategy.get_batch_indexes(probs, labeled_pool, unlabeled_pool, batch_size)
             labeled_pool = np.concatenate([labeled_pool, unlabeled_pool[indexes]], axis=0)
             unlabeled_pool = np.delete(unlabeled_pool, indexes, axis=0)
 
-        predicted_positions = predict_positions(val_pool, classifier)
-        metric = calculate_metric(predicted_positions, val_pool)
+        log('Evaluating on validation...\n')
+        val_predicted_positions = predict_positions(val_pool, classifier)
+        val_metric = calculate_metric(val_predicted_positions, val_pool)
+        val_metrics.append(val_metric)
 
+        log('Evaluating on test...\n')
+        test_predicted_positions = predict_positions(test_pool, classifier)
+        test_metric = calculate_metric(test_predicted_positions, test_pool)
+        test_metrics.append(test_metric)
+
+    log('Finalizing experiment...\n')
+    result += '\nValidation metrics:\n'
+    for metric in val_metrics:
         result += str(metric) + '\n'
-        metrics.append(metric)
-        classifiers.append(classifier)
-
-    best_iteration = np.argmax(metrics)
-    best_classifier = classifiers[best_iteration]
-    predicted_positions = predict_positions(test_pool, best_classifier)
-    final_metric = calculate_metric(predicted_positions, test_pool)
-    result += 'best iteration: ' + str(best_iteration) + '\n'
-    result += 'metric on test using classifier from best iteration: ' + str(final_metric) + '\n'
+    result += '\nTest metrics:\n'
+    for metric in test_metrics:
+        result += str(metric) + '\n'
     result += '\n'
     print(result)
+    log('Experiment finished\n')
     return result
 
 

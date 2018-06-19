@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import scipy.stats as ss
 import argparse
 import json
+import sys
 
 from math import ceil
 from collections import defaultdict
@@ -27,9 +28,8 @@ PARAMS_KEY = 'strategy_params'
 
 ERROR_LINE = "error!!!"
 START_LINE = "Algorithm with following features was applied:"
-BEGIN_BEST_ITER = 'best iteration'
-BEGIN_FINAL_METRIC = 'metric on test using classifier from best iteration'
-
+START_VALIDATION_METRICS = 'Validation metrics:'
+START_TEST_METRICS = 'Test metrics:'
 STRATEGY_COLORS = {
     'US': 'blue',
     'random': 'orange',
@@ -106,23 +106,25 @@ def parse_result_block(results_lines, line_ind):
         line_ind += 1
     line_ind = _skip_blank(results_lines, line_ind)
     line_ind, algo_params = _get_params(results_lines, line_ind)
+
+    val_results = []
+    test_results = []
+
     line_ind = _skip_blank(results_lines, line_ind)
-
-    results = []
-
-    while not results_lines[line_ind].startswith(BEGIN_BEST_ITER):
-        results.append(float(results_lines[line_ind]))
+    assert results_lines[line_ind] == START_VALIDATION_METRICS
+    line_ind += 1
+    while results_lines[line_ind] != "":
+        val_results.append(float(results_lines[line_ind]))
         line_ind += 1
 
-    assert results_lines[line_ind].startswith(BEGIN_BEST_ITER)
-    best_iter = int(results_lines[line_ind].split(': ')[1])
+    line_ind = _skip_blank(results_lines, line_ind)
+    assert results_lines[line_ind] == START_TEST_METRICS
     line_ind += 1
+    while results_lines[line_ind] != "":
+        test_results.append(float(results_lines[line_ind]))
+        line_ind += 1
 
-    assert results_lines[line_ind].startswith(BEGIN_FINAL_METRIC)
-    final_metric = float(results_lines[line_ind].split(': ')[1])
-    line_ind += 1
-
-    return algo_params, np.array(results), line_ind, best_iter, final_metric
+    return algo_params, np.array(test_results), np.array(val_results), line_ind
 
 
 def get_results(filename, strategies_to_data=None, result_keys_for_name=None):
@@ -133,18 +135,17 @@ def get_results(filename, strategies_to_data=None, result_keys_for_name=None):
     line_ind = _skip_blank(results_lines, 0)
 
     while line_ind < len(results_lines):
-        params, result, line_ind, best_iter, final_metric = parse_result_block(
+        params, val_result, test_result, line_ind = parse_result_block(
             results_lines, line_ind
         )
         if strategies_to_data is not None and params[STRATEGY_KEY] not in strategies_to_data:
             continue
         name = _get_name(params, result_keys_for_name)
         if name not in results:
-            results[name] = (np.array([result]), [final_metric], [best_iter])
+            results[name] = [np.array([val_result]), np.array([test_result])]
         else:
-            results[name][0] = np.concatenate([[result], results[name][0]], axis=0)
-            results[name][1].append(final_metric)
-            results[name][2].append(best_iter)
+            results[name][0] = np.concatenate([[val_result], results[name][0]], axis=0)
+            results[name][1] = np.concatenate([[test_result], results[name][1]], axis=0)
 
         line_ind = _skip_blank(results_lines, line_ind)
 
@@ -157,7 +158,7 @@ def get_plot_data(
     if results is None or params is None:
         results, params = get_results(filename, strategies_to_data, result_keys_for_name)
     plot_data = {}
-    for name, (metrics, _, _) in results.items():
+    for name, (val_metrics, _) in results.items():
         x_start = float(params[INITIAL_SIZE_KEY]) / params[TRAIN_SIZE_KEY]
         x_end = float(params[MAX_QUERIES_KEY]) / params[TRAIN_SIZE_KEY]
         x_batch = float(params[BATCH_SIZE_KEY]) / params[TRAIN_SIZE_KEY]
@@ -229,7 +230,6 @@ def draw_plots(
         if compare_with_random and name == RANDOM_NAME:
             continue
         if compare_with_random:
-            print(name)
             plt.figure()
         _draw_plot(name, data, thick_num, *args, **kwargs)
         if compare_with_random:
@@ -238,6 +238,32 @@ def draw_plots(
 
     if not compare_with_random:
         _finilize_and_save(title, xlabel, ylabel, fontsize, image_path, '')
+
+
+def print_test_scores(results, report_file, cut_outliers=3):
+    if report_file == 'stdout':
+        out_file = sys.stdout
+    else:
+        out_file = open(report_file, 'w')
+    max_len = max(map(len, results.keys()))
+    string_patter = '{:' + str(max_len) + '} | {:.4f} | {:.4f}\n'
+    scores = {}
+    for name, (val_scores, test_scores) in results.items():
+        best_iterations = np.argmax(val_scores, axis=1)
+        test_scores_on_best_iter = test_scores[np.arange(len(test_scores)), best_iterations]
+        # cut bottom
+        cutted_scores = np.partition(test_scores_on_best_iter, cut_outliers)[cut_outliers:]
+        # cut top
+        cutted_scores = np.partition(cutted_scores, -cut_outliers)[:-cut_outliers]
+        mean = np.mean(cutted_scores)
+        std = np.std(cutted_scores) / np.sqrt(len(cutted_scores))
+        scores[name] = (mean, std)
+
+    for name, (mean, std) in sorted(scores.items(), key=lambda x: -x[1][0]):
+        out_file.write(string_patter.format(name, mean, std))
+
+    if report_file != 'stdout':
+        out_file.close()
 
 
 def mannwhitneyu_test(results, key_a, key_b, pvalue_bound=0.05):
@@ -286,6 +312,9 @@ def parse_args():
     single_result_parser.add_argument('--results_path', default='results.txt')
     single_result_parser.add_argument('--compare_with_random', action='store_true')
     _add_common_params(single_result_parser)
+    single_result_parser.add_argument('--print_test_scores', action='store_true')
+    single_result_parser.add_argument('--report_file', default='stdout')
+    single_result_parser.add_argument('--cut_outliers', type=int, default=3)
 
     many_results_parser = mode_adder.add_parser('many')
     many_results_parser.add_argument('--results_paths', nargs='+', required=True)
@@ -304,13 +333,20 @@ def main():
     args = parse_args()
 
     if args.mode == 'single':
+        results, params = get_results(args.results_path, args.strategies_to_data, args.key_for_name)
         plot_data = get_plot_data(
             args.results_path,
             args.key_for_name,
             max_size_draw=args.max_size_draw,
             strategies_to_data=args.strategies_to_data,
+            results=results,
+            params=params,
         )
         draw_plots(plot_data, args.compare_with_random, args.title, image_path=args.image_path)
+
+        if args.print_test_scores:
+            print_test_scores(results, args.report_file, args.cut_outliers)
+
     if args.mode == 'many':
         plot_datas = defaultdict(dict)
         for result_path, result_name in zip(args.results_paths, args.names):

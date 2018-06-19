@@ -7,7 +7,7 @@ from strategies import check_existance, QBCMetrics
 def _test(strategy, params='{}'):
     assert check_existance(strategy), "Unknown strategy: {}".format(strategy)
 
-    result_file_name = '_test_result_file.txt'
+    result_file_name = '_test_result_file_{}.txt'.format(strategy)
     test_pool_path = 'test_test_pool.csv'
     train_pool_path = 'test_train_pool.csv'
 
@@ -19,8 +19,8 @@ def _test(strategy, params='{}'):
             '--val_pool', test_pool_path,
             '--test_pool', test_pool_path,
             '--strategy', strategy,
-            '--initial_size', str(5. / 55),
-            '--batch_size', str(20. / 55),
+            '--initial_size', str(0.2),
+            '--batch_size', str(0.2),
             '--random_seed', '0',
             '--train_steps', '20',
             '--strategy_params', params,
@@ -30,19 +30,11 @@ def _test(strategy, params='{}'):
     assert returncode == 0, "al_experiment failed with error"
 
     results, _ = get_results(result_file_name)
-    os.remove(result_file_name)
-    best_iter = results[strategy][2]
-    final_metric = results[strategy][1]
-    assert len(best_iter) == 1
-    assert len(final_metric) == 1
-    best_iter = best_iter[0]
-    final_metric = final_metric[0]
-    assert isinstance(best_iter, int)
-    assert isinstance(final_metric, float)
+    # os.remove(result_file_name)
     assert len(results[strategy][0]) == 1
-    assert len(results[strategy][0][0]) == 4
+    assert len(results[strategy][0][0]) == 5
     assert len(results[strategy][1]) == 1
-    assert results[strategy][0][0][best_iter] == final_metric
+    assert (results[strategy][0] == results[strategy][1]).all()
 
 
 def test_US():
@@ -97,4 +89,5 @@ def test_QBC():
 
 
 if __name__ == '__main__':
-    test_US()
+    test_PR()
+    test_QBC()
