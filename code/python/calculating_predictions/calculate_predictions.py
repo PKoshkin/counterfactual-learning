@@ -17,7 +17,8 @@ def calculate_predictions(args):
         verbose: bool. Wether to print logs to stdout or not.
         data_folder: str. Directory, containing files "day_i.json" where i in range(DAYS_NUMBER).
         out_folder: str. Directory, to save results. 1 file will be created.
-        type: str. One of ["regression", "classification", "binary_classification", "binary_regression"]
+        type: str. One of ["regression", "classification"]
+        need_position_feature: bool
         model_constructor: callable. Takes verbose param. If type == "classification" also takes max_clicks param.
         additional_features: (dict day -> additional features for day) or None.
         labels_to_substruct: (dict day -> targets to substruct for day) or None.
@@ -37,9 +38,8 @@ def calculate_predictions(args):
 
     json_filenames = [os.path.join(args.data_folder, "day_{}.json".format(day)) for day in range(DAYS_NUMBER)]
 
-    need_position_feature = not args.type.startswith("binary")
-
     def get_day_features(day, different_positions=False):
+        need_position_feature = args.need_position_feature if not different_positions else True
         if args.additional_features is not None:
             return get_linear_stacked_features(
                 pool_iterator(json_filenames[day]),
@@ -47,7 +47,8 @@ def calculate_predictions(args):
                 first_feature=args.first_feature,
                 last_feature=args.last_feature,
                 add_positions=need_position_feature,
-                different_positions=different_positions
+                different_positions=different_positions,
+                verbose=args.verbose
             )
         else:
             return get_linear_stacked_features(
@@ -55,7 +56,8 @@ def calculate_predictions(args):
                 first_feature=args.first_feature,
                 last_feature=args.last_feature,
                 add_positions=need_position_feature,
-                different_positions=different_positions
+                different_positions=different_positions,
+                verbose=args.verbose
             )
 
     train_features = np.concatenate([get_day_features(day) for day in args.train_days], axis=0)
@@ -67,7 +69,7 @@ def calculate_predictions(args):
             labels_to_substruct = np.load(args.labels_to_substruct[day])
             day_labels = get_labels(pool_iterator(json_filenames[day]), args)
             assert np.shape(labels_to_substruct) == np.shape(day_labels)
-            return day_labels - labels_to_substruct
+            return (day_labels - labels_to_substruct) * 100
         else:
             return get_labels(pool_iterator(json_filenames[day]), args)
 
@@ -99,7 +101,7 @@ def calculate_predictions(args):
         if args.verbose:
             log("built {} trees".format(model.tree_count_))
 
-    test_features = [get_day_features(test_day, not args.type.startswith("binary")) for test_day in args.test_days]
+    test_features = [get_day_features(test_day, args.need_position_feature) for test_day in args.test_days]
 
     if args.verbose:
         log("days to predict: {}".format(args.test_days))
@@ -107,22 +109,23 @@ def calculate_predictions(args):
         if args.verbose:
             log("features shape: {}".format(np.shape(features)))
             log("start predicting on day {}".format(test_day))
-        if args.type.endswith("classification"):
+        if args.type == "classification":
             predictions = model.predict_proba(features)
         else:
             predictions = model.predict(features)
 
-        if args.type == "classification":
-            predictions = np.reshape(predictions, [-1, len(POSITIONS_VARIANTS), args.max_clicks + 2])
-        if args.type == "regression":
-            predictions = np.reshape(predictions, [-1, len(POSITIONS_VARIANTS)])
+        if args.need_position_feature:
+            if args.type == "classification":
+                predictions = np.reshape(predictions, [-1, len(POSITIONS_VARIANTS), args.max_clicks + 2])
+            if args.type == "regression":
+                predictions = np.reshape(predictions, [-1, len(POSITIONS_VARIANTS)])
+        filename = os.path.join(
+            args.out_folder,
+            "train_{}_test_{}".format("_".join(map(str, args.train_days)), test_day)
+        )
         if args.verbose:
             log("predictions shape: {}".format(np.shape(predictions)))
-        if args.verbose:
-            log("saveing results")
-        np.save(
-            os.path.join(args.out_folder, "train_{}_test_{}".format("_".join(map(str, args.train_days)), test_day)),
-            np.array(predictions)
-        )
+            log("saveing results to {}".format(filename))
+        np.save(filename, np.array(predictions))
         if args.verbose:
             log("results saved")

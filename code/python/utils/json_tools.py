@@ -1,7 +1,7 @@
 import numpy as np
 import pickle
 from log import log
-from constants import POSITIONS_VARIANTS, FEATURES_NUMBER
+from constants import POSITIONS_VARIANTS
 
 
 def get_from_pool(pool_iterator, name, constructor=float):
@@ -33,8 +33,8 @@ def get_labels(pool_iterator, args):
 
 
 def make_feature(json, add_positions, first_feature, last_feature, different_positions):
-    assert different_positions or add_positions
     if different_positions:
+        assert add_positions
         return [
             [prediction] + json["factors"][first_feature:last_feature]
             for prediction in POSITIONS_VARIANTS
@@ -51,7 +51,7 @@ def get_linear_stacked_features(pool_iterator,
                                 last_feature=-1,
                                 add_positions=True,
                                 different_positions=False,
-                                verose=False):
+                                verbose=False):
     """
     models_list: list of strings - filenames of files with models to predict features
     """
@@ -65,10 +65,9 @@ def get_linear_stacked_features(pool_iterator,
         for item in pool_iterator
     ])
     if different_positions:
-        features_num = FEATURES_NUMBER if last_feature == -1 else last_feature - first_feature
-        if add_positions:
-            features_num += 1
-        features = np.reshape(features, [-1, features_num])
+        features = np.reshape(features, [-1, np.shape(features)[2]])
+    if verbose:
+        log("    base features shape: {}".format(np.shape(features)))
     predictions = []
     for filename in models_list:
         model = pickle.load(open(filename, "rb"))
@@ -77,8 +76,6 @@ def get_linear_stacked_features(pool_iterator,
         #    or
         #    model_features_from_x_to_y_trained_on_days
         if filename.find("from") == -1:
-            if verose:
-                log("adding model {} prediction on all features".format(filename))
             features_to_predict = features
         else:
             from_index = filename.find("_from_")
@@ -86,13 +83,16 @@ def get_linear_stacked_features(pool_iterator,
             to_index = filename.find("_to_")
             low = int(filename[(from_index + 6):to_index])
             hight = int(filename[(to_index + 4):trained_index])
-            if verose:
-                log("adding model {} prediction on features from {} to {}".format(filename, low, hight))
             if add_positions:
                 features_to_predict = np.concatenate([features[:, 0:1], features[:, (low + 1):(hight + 1)]], axis=1)
             else:
                 features_to_predict = features[:, low:hight]
 
         prediction = model.predict(features_to_predict)
-        predictions.append(np.reshape(prediction, (-1, 1)))
-    return np.concatenate([features] + predictions, axis=1)
+        predictions.append(np.reshape(prediction, [-1, 1]))
+
+    result = np.concatenate([features] + predictions, axis=1)
+    if verbose:
+        log("    {} features added".format(len(predictions)))
+        log("    result shape: {}".format(np.shape(result)))
+    return result
