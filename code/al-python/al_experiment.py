@@ -36,7 +36,7 @@ def _run_al_experiment(
     params = {
         "algo": algo,
         "strategy": strategy_name,
-        "strategy_params": json.dumps(strategy_params),
+        "strategy_params": json.dumps(strategy.get_info(strategy_params)),
         "batch size": batch_size,
         "initial size": len(labeled_pool),
         "max queries": end_size,

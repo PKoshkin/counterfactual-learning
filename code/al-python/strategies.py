@@ -5,8 +5,23 @@ import pandas as pd
 from math import ceil
 import sys
 
-from utils import get_features
+from utils import get_features, POSITIONS, get_positions
 from classifier import train, predict_positions
+
+
+def _get_indexes(scores, unlabeled_pool, size, split_by_positions):
+    if split_by_positions:
+        pos_batch_size = int(round(size / len(POSITIONS)))
+        indexes_by_pos = []
+        for pos in POSITIONS:
+            scores_for_pos = scores[get_positions(unlabeled_pool) == pos]
+            pos_indexes = np.argpartition(scores_for_pos, -pos_batch_size)[-pos_batch_size:]
+            indexes_by_pos.append(pos_indexes)
+        indexes_to_label = np.concatenate(indexes_by_pos)
+    else:
+        indexes_to_label = np.argpartition(scores, -size)[-size:]
+
+    return indexes_to_label
 
 
 class BaseStrategy(object):
@@ -48,10 +63,18 @@ class BaseActiveLearningStrategy(BaseStrategy):
             return np.arange(len(unlabeled_pool))
 
         active_batch_size = int(round(batch_size * (1 - self._random_part)))
-        scores = self._get_scores(probs, labeled_pool, unlabeled_pool)
-        indexes_to_label = np.argpartition(scores, -active_batch_size)[-active_batch_size:]
+        scores = self._get_scores(probs, labeled_pool, unlabeled_pool, batch_size)
+
+        if getattr(self, 'return_indexes', False):  # not the greatest idea of all times :(
+            indexes_to_label = scores
+        else:
+            indexes_to_label = _get_indexes(
+                scores, unlabeled_pool, active_batch_size,
+                self._split_by_positions
+            )
+
         if self._random_part > 0.0:
-            random_batch_size = int(round(batch_size * self._random_part))
+            random_batch_size = batch_size - len(indexes_to_label)
             all_indexes = np.arange(len(unlabeled_pool))
             not_chosen = np.delete(all_indexes, indexes_to_label)
             random_indexes_to_label = np.random.choice(
@@ -64,7 +87,10 @@ class BaseActiveLearningStrategy(BaseStrategy):
         self._update_params(probs, labeled_pool, unlabeled_pool, indexes_to_label)
         return indexes_to_label
 
-    def _get_scores(self, probs, labeled_pool, unlabeled_pool):
+    def _get_scores(
+            self, probs, labeled_pool, unlabeled_pool, batch_size,
+            indexes_to_choose_from=None
+            ):
         raise NotImplementedError()
 
     def _update_params(self, probs, labeled_pool, unlabeled_pool, indexes_to_label):
@@ -76,6 +102,13 @@ class BaseActiveLearningStrategy(BaseStrategy):
         assert random_part >= 0.0 and random_part < 1.0, 'random_part should be in [0, 1)'
 
         return random_part
+
+    @property
+    def _split_by_positions(self):
+        split_by_positions = self._params.get('split_by_positions', False)
+        assert isinstance(split_by_positions, bool), 'split_by_positions should be bool'
+
+        return split_by_positions
 
 
 class ProbaBasedActiveLearningStrategy(BaseActiveLearningStrategy):
@@ -122,7 +155,13 @@ class ProbaBasedActiveLearningStrategy(BaseActiveLearningStrategy):
 class PositionRelevanceActiveLearningStragety(ProbaBasedActiveLearningStrategy):
     name = 'PR'
 
-    def _get_scores(self, probs, labeled_pool, unlabeled_pool):
+    def _get_scores(
+            self, probs, labeled_pool, unlabeled_pool, batch_size,
+            indexes_to_choose_from=None
+            ):
+        if indexes_to_choose_from is not None:
+            probs = probs[indexes_to_choose_from]
+            unlabeled_pool = unlabeled_pool[indexes_to_choose_from]
         if self._relevance_metric == 'delta_max':
             max_values = np.max(probs, axis=1)
             rnd_values = probs[
@@ -143,7 +182,14 @@ class PositionRelevanceActiveLearningStragety(ProbaBasedActiveLearningStrategy):
 class UncertaintySamplingActiveLearningStrategy(ProbaBasedActiveLearningStrategy):
     name = 'US'
 
-    def _get_scores(self, probs, labeled_pool, unlabeled_pool):
+    def _get_scores(
+            self, probs, labeled_pool, unlabeled_pool, batch_size,
+            indexes_to_choose_from=None
+            ):
+        if indexes_to_choose_from is not None:
+            unlabeled_pool = unlabeled_pool[indexes_to_choose_from]
+            probs = probs[indexes_to_choose_from]
+
         if self._uncertainty_metric == 'max':
             return 1 - np.max(probs, axis=1)
 
@@ -192,13 +238,16 @@ class BaseDensityBasedActiveLearningStrategy(BaseActiveLearningStrategy):
     def _init_closeness(self, labeled_pool, unlabeled_pool):
         raise NotImplementedError()
 
-    def _compute_scores(self, probs, labeled_pool, unlabeled_pool):
+    def _compute_scores(self, probs, labeled_pool, unlabeled_pool, indexes_to_choose_from):
         raise NotImplementedError()
 
-    def _update_closeness(self, new_unlabeled_pool, new_labeled_pool_part):
+    def _update_closeness(self, new_unlabeled_pool, new_labeled_pool_part, indexes_to_label):
         raise NotImplementedError()
 
-    def _get_scores(self, probs, labeled_pool, unlabeled_pool):
+    def _get_scores(
+            self, probs, labeled_pool, unlabeled_pool, batch_size,
+            indexes_to_choose_from=None
+            ):
         if self._closeness is None:
             sys.stderr.write(
                 'closeness is None, make sure this is the first ' +
@@ -206,16 +255,16 @@ class BaseDensityBasedActiveLearningStrategy(BaseActiveLearningStrategy):
             )
             self._init_closeness(labeled_pool, unlabeled_pool)
 
-        return self._compute_scores(probs, labeled_pool, unlabeled_pool)
+        return self._compute_scores(probs, labeled_pool, unlabeled_pool, indexes_to_choose_from)
 
-    def _compute_closeness(self, first_pool, second_pool):
-        closeness = np.zeros(len(first_pool))
+    def _compute_closeness(self, first_pool, second_pool, first_pool_start=0):
+        closeness = np.zeros(len(first_pool) - first_pool_start)
         reduced_size = max(int(len(second_pool) * self._share), 1)
         second_pool_ind = np.random.choice(len(second_pool), size=reduced_size, replace=False)
         second_pool = get_features(second_pool[second_pool_ind], add_position=False)
         first_pool = get_features(first_pool, add_position=False)
 
-        for b_start_ind in range(0, len(first_pool), self._batch_size):
+        for b_start_ind in range(first_pool_start, len(first_pool), self._batch_size):
             b_end_ind = b_start_ind + self._batch_size
             tmp_closeness = np.dot(
                 first_pool[b_start_ind:b_end_ind],
@@ -224,7 +273,10 @@ class BaseDensityBasedActiveLearningStrategy(BaseActiveLearningStrategy):
             norm = np.linalg.norm(first_pool[b_start_ind:b_end_ind], axis=1)
             tmp_closeness = (tmp_closeness.T / norm).T
             tmp_closeness /= np.linalg.norm(second_pool, axis=1)
-            closeness[b_start_ind:b_end_ind] = self._aggregation(tmp_closeness, axis=1)
+
+            closeness_start = b_start_ind - first_pool_start
+            closeness_end = b_end_ind - first_pool_start
+            closeness[closeness_start:closeness_end] = self._aggregation(tmp_closeness, axis=1)
         return closeness
 
     def _update_params(self, probs, labeled_pool, unlabeled_pool, indexes_to_label):
@@ -234,7 +286,7 @@ class BaseDensityBasedActiveLearningStrategy(BaseActiveLearningStrategy):
 
         new_labeled_pool_part = unlabeled_pool[indexes_to_label]
         new_unlabeled_pool = unlabeled_pool[mask]
-        self._update_closeness(new_unlabeled_pool, new_labeled_pool_part)
+        self._update_closeness(new_unlabeled_pool, new_labeled_pool_part, indexes_to_label)
 
     @property
     def _share(self):
@@ -273,10 +325,14 @@ class DiversityActiveLearningStrategy(BaseDensityBasedActiveLearningStrategy):
     def _init_closeness(self, labeled_pool, unlabeled_pool):
         self._closeness = self._compute_closeness(unlabeled_pool, labeled_pool)
 
-    def _compute_scores(self, probs, labeled_pool, unlabeled_pool):
-        return 1 - self._closeness
+    def _compute_scores(self, probs, labeled_pool, unlabeled_pool, indexes_to_choose_from):
+        if indexes_to_choose_from is None:
+            closeness = self._closeness
+        else:
+            closeness = self._closeness[indexes_to_choose_from]
+        return 1 - closeness
 
-    def _update_closeness(self, new_unlabeled_pool, new_labeled_pool_part):
+    def _update_closeness(self, new_unlabeled_pool, new_labeled_pool_part, indexes_to_label):
         closeness_update = self._compute_closeness(new_unlabeled_pool, new_labeled_pool_part)
         self._closeness = np.maximum(closeness_update, self._closeness)
 
@@ -288,38 +344,108 @@ class DensityActiveLearningStrategy(BaseDensityBasedActiveLearningStrategy):
         return np.mean(closeness_2d, axis=axis)
 
     def _init_closeness(self, labeled_pool, unlabeled_pool):
-        self._closeness = self._compute_closeness(unlabeled_pool, unlabeled_pool)
+        if self._all_data:
+            all_data = np.concatenate([labeled_pool, unlabeled_pool], axis=0)
+            self._closeness = self._compute_closeness(all_data, all_data, len(labeled_pool))
+        else:
+            self._closeness = self._compute_closeness(unlabeled_pool, unlabeled_pool)
 
-    def _compute_scores(self, probs, labeled_pool, unlabeled_pool):
-        return 1 + self._closeness ** self._beta
+    def _compute_scores(self, probs, labeled_pool, unlabeled_pool, indexes_to_choose_from):
+        if indexes_to_choose_from is None:
+            closeness = self._closeness
+        else:
+            closeness = self._closeness[indexes_to_choose_from]
+        return 1 + closeness ** self._beta
 
-    def _update_closeness(self, new_unlabeled_pool, new_labeled_pool_part):
-        closeness_update = self._compute_closeness(new_unlabeled_pool, new_labeled_pool_part)
-        old_len = len(new_unlabeled_pool) + len(new_labeled_pool_part)
-        new_len = len(new_unlabeled_pool)
-        part_len = len(new_labeled_pool_part)
+    def _update_closeness(self, new_unlabeled_pool, new_labeled_pool_part, indexes_to_label):
+        if self._all_data:
+            self._closeness = np.delete(self._closeness, indexes_to_label)
+        else:
+            closeness_update = self._compute_closeness(new_unlabeled_pool, new_labeled_pool_part)
+            old_len = len(new_unlabeled_pool) + len(new_labeled_pool_part)
+            new_len = len(new_unlabeled_pool)
+            part_len = len(new_labeled_pool_part)
 
-        self._closeness = (self._closeness * old_len - closeness_update * part_len) / new_len
+            self._closeness = (self._closeness * old_len - closeness_update * part_len) / new_len
 
     @property
     def _beta(self):
         return self._params.get('beta', 1.0)
 
+    @property
+    def _all_data(self):
+        return self._params.get('all_data', False)
+
+
+class MixTypes(object):
+    MULTIPLY = 'multiply'
+    EXPLORATION_GUIDED = 'EG'
+
+    @classmethod
+    def get_all(cls):
+        return [
+            getattr(cls, var)
+            for var in vars(cls)
+            if not var.startswith('__') and var != 'get_all'
+        ]
+
 
 class MixActiveLearningStrategy(BaseActiveLearningStrategy):
     def __init__(self, params):
         self._params = params
+        assert self._strategies is not None, 'params should contain strategies'
         self._strategies = [
-            STRATEGIES[strategy_name](strategy_params)
-            for strategy_name, strategy_params in self._params.items()
-            if strategy_name in STRATEGIES
+            STRATEGIES[strategy](self._params[strategy])
+            for strategy in self._strategies
         ]
+        if self._mix_type == MixTypes.EXPLORATION_GUIDED:
+            self.return_indexes = True
 
-    def _get_scores(self, probs, labeled_pool, unlabeled_pool):
-        scores = np.ones(len(unlabeled_pool))
-        for strategy in self._strategies:
-            scores *= strategy._get_scores(probs, labeled_pool, unlabeled_pool)
-        return scores
+    def _get_scores(
+            self, probs, labeled_pool, unlabeled_pool, batch_size,
+            indexes_to_choose_from=None
+            ):
+        if self._mix_type == MixTypes.MULTIPLY:
+            scores = np.ones(len(unlabeled_pool))
+            for strategy in self._strategies:
+                scores *= strategy._get_scores(
+                    probs, labeled_pool, unlabeled_pool, batch_size,
+                    indexes_to_choose_from
+                )
+            return scores
+        elif self._mix_type == MixTypes.EXPLORATION_GUIDED:
+            batches = [
+                int(batch_size * self._reserve_size ** i)
+                for i in xrange(len(self._strategies) - 1, -1, -1)
+            ]
+            chosed_indexes = np.arange(len(unlabeled_pool))
+            for batch, strategy in zip(batches, self._strategies):
+                if batch >= len(unlabeled_pool):
+                    sys.stderr.wirte(
+                        'Batch size with reserve is bigger than unlabeled_pool size. ' +
+                        'Probably, reserve_size is too big, consider reducing it. ' +
+                        'Skipping {} strategy.\n'.format(strategy.name)
+                    )
+                    continue
+                scores = strategy._get_scores(
+                    probs, labeled_pool, unlabeled_pool, batch,
+                    chosed_indexes
+                )
+                new_indexes = _get_indexes(
+                    scores, unlabeled_pool[chosed_indexes], batch,
+                    self._split_by_positions
+                )
+                chosed_indexes = chosed_indexes[new_indexes]
+
+            return chosed_indexes
+
+    @property
+    def _strategies(self):
+        return self._params.get('strategies')
+
+    @_strategies.setter
+    def _strategies(self, value):
+        self._params['strategies'] = value
 
     def _update_params(self, probs, labeled_pool, unlabeled_pool, indexes_to_label):
         for strategy in self._strategies:
@@ -330,14 +456,23 @@ class MixActiveLearningStrategy(BaseActiveLearningStrategy):
         info = {}
         for key, value in params.items():
             if key in STRATEGIES:
-                info.update({
-                    key + '_' + param_key: param_value
-                    for param_key, param_value in STRATEGIES[key].get_info(value).items()
-                })
-            else:
+                info[key] = STRATEGIES[key].get_info(value)
+            elif key != 'strategies':
                 info[key] = value
 
         return info
+
+    @property
+    def _mix_type(self):
+        mix_type = self._params.get('mix_type', MixTypes.MULTIPLY)
+        assert mix_type in MixTypes.get_all(), (
+            'Unknown type: {}, allowed types: {}'.format(mix_type, MixTypes.get_all())
+        )
+        return mix_type
+
+    @property
+    def _reserve_size(self):
+        return self._params.get('reserve_size', 1.1)
 
 
 class QBCMetrics(object):
@@ -346,7 +481,11 @@ class QBCMetrics(object):
 
     @classmethod
     def get_all(cls):
-        return [var for var in vars(cls) if not var.startswith('__') and var != 'get_all']
+        return [
+            getattr(cls, var)
+            for var in vars(cls)
+            if not var.startswith('__') and var != 'get_all'
+        ]
 
 
 class QBCActiveLearningStrategy(BaseActiveLearningStrategy):
@@ -359,7 +498,6 @@ class QBCActiveLearningStrategy(BaseActiveLearningStrategy):
     def _compute_metric(self, auxilary_predicted_probs, main_predicted_probs):
         all_probs = np.stack(auxilary_predicted_probs + [main_predicted_probs])
         num_models, num_objects, num_classes = all_probs.shape
-        print(all_probs.shape)
         total_voutes_number = all_probs.shape[0] * self._voute_number
 
         if self._metric == QBCMetrics.VE:
@@ -378,7 +516,14 @@ class QBCActiveLearningStrategy(BaseActiveLearningStrategy):
             KL_distances = np.sum(all_probs * np.log(all_probs / mean_probs + 1e-5), axis=-1)
             return np.mean(KL_distances, axis=0)
 
-    def _get_scores(self, probs, labeled_pool, unlabeled_pool):
+    def _get_scores(
+            self, probs, labeled_pool, unlabeled_pool, batch_size,
+            indexes_to_choose_from=None
+            ):
+        if indexes_to_choose_from is not None:
+            probs = probs[indexes_to_choose_from]
+            unlabeled_pool = unlabeled_pool[indexes_to_choose_from]
+
         if self._iteration == 0:
             self._pool_indexes = [
                 np.random.choice(len(labeled_pool), len(labeled_pool))
@@ -413,6 +558,9 @@ class QBCActiveLearningStrategy(BaseActiveLearningStrategy):
         )
         self._models[model_ind] = train(train_pool, verbose=False, **self._learning_params)
 
+    def get_info(cls, params):
+        return params
+
     @property
     def _models_num(self):
         models_num = self._params.get('models_num', 3)
@@ -424,7 +572,7 @@ class QBCActiveLearningStrategy(BaseActiveLearningStrategy):
 
     @property
     def _learning_params(self):
-        return self._params.get('learning_params', {'iterations': 500})
+        return self._params.get('learning_params', {})
 
     @property
     def _metric(self):
@@ -469,7 +617,9 @@ def check_existance(strategy):
 def _preproc(strategy, params):
     assert check_existance(strategy), "Unknown strategy: {}".format(strategy)
     if '-' in strategy:
-        for name in strategy.split('-'):
+        strategies = strategy.split('-')
+        params['strategies'] = strategies
+        for name in strategies:
             params.setdefault(name, {})
         return MixActiveLearningStrategy, params
     else:

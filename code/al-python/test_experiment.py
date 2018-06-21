@@ -1,7 +1,7 @@
 import os
 import subprocess
 from results_handling import get_results
-from strategies import check_existance, QBCMetrics
+from strategies import check_existance, QBCMetrics, MixTypes
 
 
 def _test(strategy, params='{}'):
@@ -58,6 +58,34 @@ def test_mix():
     _test('density-diversity')
 
 
+def test_PR():
+    _test('PR')
+
+
+def test_QBC():
+    _test('QBC')
+    _test('QBC', params='{"metric": "' + QBCMetrics.KL + '"}')
+
+
+def test_mix_EG():
+    _test('diversity-density', '{"mix_type": "' + MixTypes.EXPLORATION_GUIDED + '"}')
+    _test(
+        'diversity-PR',
+        '{"mix_type": "' + MixTypes.EXPLORATION_GUIDED + '", "reserve_size": 1.2}'
+    )
+
+
+def test_split_by_positions():
+    _test('US', '{"split_by_positions": true}')
+    _test('density', '{"split_by_positions": true}')
+    _test('QBC', '{"split_by_positions": true}')
+    _test('diversity-PR', '{"split_by_positions": true}')
+    _test(
+        'diversity-PR',
+        '{"mix_type": "' + MixTypes.EXPLORATION_GUIDED + '", "split_by_positions": true}'
+    )
+
+
 def test_density_params():
     _test('density', '{"share": 0.1}')
 
@@ -79,15 +107,6 @@ def test_mix_params():
     _test('US-density', '{"US": {"uncertainty_metric": "gini"}, "density": {"share": 0.1}}')
 
 
-def test_PR():
-    _test('PR')
-
-
-def test_QBC():
-    _test('QBC')
-    _test('QBC', params='{"metric": "' + QBCMetrics.KL + '"}')
-
-
 if __name__ == '__main__':
-    test_PR()
-    test_QBC()
+    # test_mix_EG()
+    test_split_by_positions()
