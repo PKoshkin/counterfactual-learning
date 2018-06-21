@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+from datetime import datetime
 from log import log
 from constants import POSITIONS_VARIANTS
 
@@ -8,8 +9,8 @@ def get_from_pool(pool_iterator, name, constructor=float):
     return np.array([constructor(item[name]) for item in pool_iterator])
 
 
-def get_binary_labels(pool_iterator, trashhold):
-    return get_from_pool(pool_iterator, "target", lambda item: 1 if item > trashhold else 0)
+def get_binary_labels(pool_iterator, threshold):
+    return get_from_pool(pool_iterator, "target", lambda item: 1 if item > threshold else 0)
 
 
 def get_regression_labels(pool_iterator):
@@ -32,17 +33,23 @@ def get_labels(pool_iterator, args):
         raise ValueError("Wrong type {}".format(args.type))
 
 
-def make_feature(json, add_positions, first_feature, last_feature, different_positions):
+def make_feature(json, add_positions, first_feature, last_feature, different_positions, add_datetime_features=False):
+    addidional_features = [
+        datetime.fromtimestamp(json["ts"]).day / 32,
+        datetime.fromtimestamp(json["ts"]).hour / 24,
+        datetime.fromtimestamp(json["ts"]).minute / 60,
+        datetime.fromtimestamp(json["ts"]).month / 12
+    ] if add_datetime_features else []
     if different_positions:
         assert add_positions
         return [
-            [prediction] + json["factors"][first_feature:last_feature]
-            for prediction in POSITIONS_VARIANTS
+            [position] + json["factors"][first_feature:last_feature] + addidional_features
+            for position in POSITIONS_VARIANTS
         ]
     elif add_positions:
-        return [json["pos"]] + json["factors"][first_feature:last_feature]
+        return [json["pos"]] + json["factors"][first_feature:last_feature] + addidional_features
     else:
-        return json["factors"][first_feature:last_feature]
+        return json["factors"][first_feature:last_feature] + addidional_features
 
 
 def get_linear_stacked_features(pool_iterator,

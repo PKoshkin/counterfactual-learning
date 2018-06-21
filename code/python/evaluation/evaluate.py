@@ -32,7 +32,7 @@ def evaluate(predictions_folder,
         for day in days
     ]
     with open(os.path.join(out_folder, "metrics.txt"), "w") as handler:
-        for i, (predictions_filename, data_filename) in zip(predictions_filenames, data_filenames):
+        for i, (predictions_filename, data_filename) in enumerate(zip(predictions_filenames, data_filenames)):
             if verbose:
                 log("predict on file \"{}\"".format(predictions_filename))
             predictions = np.load(predictions_filename)

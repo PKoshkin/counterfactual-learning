@@ -17,7 +17,7 @@ def calculate_predictions(args):
         verbose: bool. Wether to print logs to stdout or not.
         data_folder: str. Directory, containing files "day_i.json" where i in range(DAYS_NUMBER).
         out_folder: str. Directory, to save results. 1 file will be created.
-        type: str. One of ["regression", "classification"]
+        type: str. One of ["regression", "classification", "binary_classification"]
         need_position_feature: bool
         model_constructor: callable. Takes verbose param. If type == "classification" also takes max_clicks param.
         additional_features: (dict day -> additional features for day) or None.
@@ -27,7 +27,15 @@ def calculate_predictions(args):
         validation_day: int or None. Number of day to validate on.
         first_feature: int. First feature to take in tarining.
         last_feature: int. Last feature to take in training.
+
+        if args.tpye == "classification"
+            args.max_clicks should be provided
+
+        if args.type == "binary_classification"
+            args.threshold shoul be provided
     """
+    assert args.type in ["classification", "regression", "binary_classification"]
+
     if args.verbose:
         log("preprocesing started")
 
@@ -109,7 +117,7 @@ def calculate_predictions(args):
         if args.verbose:
             log("features shape: {}".format(np.shape(features)))
             log("start predicting on day {}".format(test_day))
-        if args.type == "classification":
+        if args.type.endswith("classification"):
             predictions = model.predict_proba(features)
         else:
             predictions = model.predict(features)
@@ -117,8 +125,11 @@ def calculate_predictions(args):
         if args.need_position_feature:
             if args.type == "classification":
                 predictions = np.reshape(predictions, [-1, len(POSITIONS_VARIANTS), args.max_clicks + 2])
-            if args.type == "regression":
+            elif args.type == "regression":
                 predictions = np.reshape(predictions, [-1, len(POSITIONS_VARIANTS)])
+            else:
+                predictions = np.reshape(predictions, [-1, len(POSITIONS_VARIANTS), 2])
+
         filename = os.path.join(
             args.out_folder,
             "train_{}_test_{}".format("_".join(map(str, args.train_days)), test_day)
