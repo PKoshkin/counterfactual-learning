@@ -16,6 +16,7 @@ from strategies import STRATEGIES
 
 
 RANDOM_NAME = 'random'
+ALL_DATA = 'all_data'
 
 ALGO_KEY = 'algo'
 STRATEGY_KEY = 'strategy'
@@ -47,6 +48,16 @@ class IncorrectParams(Exception):
     def __init__(self, keys, *args, **kwargs):
         discribtion = "There is no either " + " either ".join(keys) + " in params"
         super().__init__(discribtion, *args, **kwargs)
+
+
+def _get_mean_std(scores, cut_outliers):
+    # cut bottom
+    cutted_scores = np.partition(scores, cut_outliers)[cut_outliers:]
+    # cut top
+    cutted_scores = np.partition(cutted_scores, -cut_outliers)[:-cut_outliers]
+    mean = np.mean(cutted_scores)
+    std = np.std(cutted_scores) / np.sqrt(len(cutted_scores))
+    return (mean, std)
 
 
 def _get_color(name):
@@ -153,24 +164,35 @@ def get_results(filename, strategies_to_data=None, result_keys_for_name=None):
 
 
 def get_plot_data(
-        filename, result_keys_for_name=None, max_size_draw=None, strategies_to_data=None,
+        filename, result_keys_for_name=None, max_size_draw=None, strategies_to_data=None, cut_outliers=3,
         results=None, params=None):
     if results is None or params is None:
         results, params = get_results(filename, strategies_to_data, result_keys_for_name)
+    x_start = float(params[INITIAL_SIZE_KEY]) / params[TRAIN_SIZE_KEY]
+    x_end = float(params[MAX_QUERIES_KEY]) / params[TRAIN_SIZE_KEY]
+    x_batch = float(params[BATCH_SIZE_KEY]) / params[TRAIN_SIZE_KEY]
+    iters_num = int(round((x_end - x_start) / x_batch)) + 1
+    x = np.linspace(x_start, x_end, iters_num)
+
     plot_data = {}
-    for name, (val_metrics, _) in results.items():
-        x_start = float(params[INITIAL_SIZE_KEY]) / params[TRAIN_SIZE_KEY]
-        x_end = float(params[MAX_QUERIES_KEY]) / params[TRAIN_SIZE_KEY]
-        x_batch = float(params[BATCH_SIZE_KEY]) / params[TRAIN_SIZE_KEY]
-        if max_size_draw is not None:
-            x_end = min(x_end, float(max_size_draw) / params[TRAIN_SIZE_KEY])
-        x = np.arange(x_start, x_end, x_batch)
+    last = []
+    for name, (metrics, _) in results.items():
+        cutted_metrics = np.partition(metrics, cut_outliers, axis=0)[cut_outliers:]
+        cutted_metrics = np.partition(metrics, -cut_outliers, axis=0)[:-cut_outliers]
+        mean = np.mean(cutted_metrics, axis=0)
+        if x_end == 1.0:
+            last.append(metrics[:, -1])
 
         plot_data[name] = {
             'x': x,
-            'mean': np.mean(metrics, axis=0)[:len(x)],
-            'std': np.std(metrics, axis=0)[:len(x)] / np.sqrt(len(metrics))
+            'mean': mean,
+            'std': np.std(cutted_metrics, axis=0) / np.sqrt(len(cutted_metrics))
         }
+    if x_end == 1.0:
+        last_mean, last_std = _get_mean_std(np.concatenate(last), len(last) * cut_outliers)
+        for name in results:
+            plot_data[name]['mean'][-1] = last_mean
+            plot_data[name]['std'][-1] = last_std
 
     return plot_data
 
@@ -248,16 +270,18 @@ def print_test_scores(results, report_file, cut_outliers=3):
     max_len = max(map(len, results.keys()))
     string_patter = '{:' + str(max_len) + '} | {:.4f} | {:.4f}\n'
     scores = {}
+    all_data_scores = []
     for name, (val_scores, test_scores) in results.items():
+        all_data_scores.append(test_scores[:, -1])
+        if name == RANDOM_NAME:
+            continue
+
         best_iterations = np.argmax(val_scores, axis=1)
         test_scores_on_best_iter = test_scores[np.arange(len(test_scores)), best_iterations]
-        # cut bottom
-        cutted_scores = np.partition(test_scores_on_best_iter, cut_outliers)[cut_outliers:]
-        # cut top
-        cutted_scores = np.partition(cutted_scores, -cut_outliers)[:-cut_outliers]
-        mean = np.mean(cutted_scores)
-        std = np.std(cutted_scores) / np.sqrt(len(cutted_scores))
-        scores[name] = (mean, std)
+
+        scores[name] = _get_mean_std(test_scores_on_best_iter, cut_outliers)
+
+    scores[ALL_DATA] = _get_mean_std(np.concatenate(all_data_scores), len(all_data_scores) * cut_outliers)
 
     for name, (mean, std) in sorted(scores.items(), key=lambda x: -x[1][0]):
         out_file.write(string_patter.format(name, mean, std))
@@ -312,6 +336,7 @@ def parse_args():
     single_result_parser.add_argument('--results_path', default='results.txt')
     single_result_parser.add_argument('--compare_with_random', action='store_true')
     _add_common_params(single_result_parser)
+    single_result_parser.add_argument('--no_draw', dest='draw_plots', action='store_false')
     single_result_parser.add_argument('--print_test_scores', action='store_true')
     single_result_parser.add_argument('--report_file', default='stdout')
     single_result_parser.add_argument('--cut_outliers', type=int, default=3)
@@ -334,15 +359,17 @@ def main():
 
     if args.mode == 'single':
         results, params = get_results(args.results_path, args.strategies_to_data, args.key_for_name)
-        plot_data = get_plot_data(
-            args.results_path,
-            args.key_for_name,
-            max_size_draw=args.max_size_draw,
-            strategies_to_data=args.strategies_to_data,
-            results=results,
-            params=params,
-        )
-        draw_plots(plot_data, args.compare_with_random, args.title, image_path=args.image_path)
+        if args.draw_plots:
+            plot_data = get_plot_data(
+                args.results_path,
+                args.key_for_name,
+                max_size_draw=args.max_size_draw,
+                strategies_to_data=args.strategies_to_data,
+                cut_outliers=args.cut_outliers,
+                results=results,
+                params=params,
+            )
+            draw_plots(plot_data, args.compare_with_random, args.title, image_path=args.image_path)
 
         if args.print_test_scores:
             print_test_scores(results, args.report_file, args.cut_outliers)
