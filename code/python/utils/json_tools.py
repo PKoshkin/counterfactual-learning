@@ -2,7 +2,7 @@ import numpy as np
 import pickle
 from datetime import datetime
 from log import log
-from constants import POSITIONS_VARIANTS
+from constants import POSITIONS_VARIANTS, AVERAGE_CONSTANTS_METRICS
 
 
 def get_from_pool(pool_iterator, name, constructor=float):
@@ -42,12 +42,15 @@ def make_feature(json, add_positions, first_feature, last_feature, different_pos
     ] if add_datetime_features else []
     if different_positions:
         assert add_positions
-        return [
-            [position] + json["factors"][first_feature:last_feature] + addidional_features
-            for position in POSITIONS_VARIANTS
-        ]
+        return [([position, AVERAGE_CONSTANTS_METRICS[position]] +
+                 json["factors"][first_feature:last_feature] +
+                 addidional_features) for position in POSITIONS_VARIANTS]
     elif add_positions:
-        return [json["pos"]] + json["factors"][first_feature:last_feature] + addidional_features
+        return (
+            [json["pos"], AVERAGE_CONSTANTS_METRICS[json["pos"]]] +
+            json["factors"][first_feature:last_feature] +
+            addidional_features
+        )
     else:
         return json["factors"][first_feature:last_feature] + addidional_features
 
@@ -58,6 +61,7 @@ def get_linear_stacked_features(pool_iterator,
                                 last_feature=-1,
                                 add_positions=True,
                                 different_positions=False,
+                                add_base_features=True,
                                 verbose=False):
     """
     models_list: list of strings - filenames of files with models to predict features
@@ -66,6 +70,8 @@ def get_linear_stacked_features(pool_iterator,
     if last_feature != -1:
         assert first_feature < last_feature
     assert type(add_positions) == bool
+    if not add_base_features:
+        assert len(models_list) != 0
 
     features = np.array([
         make_feature(item, add_positions, first_feature, last_feature, different_positions)
@@ -91,15 +97,22 @@ def get_linear_stacked_features(pool_iterator,
             low = int(filename[(from_index + 6):to_index])
             hight = int(filename[(to_index + 4):trained_index])
             if add_positions:
-                features_to_predict = np.concatenate([features[:, 0:1], features[:, (low + 1):(hight + 1)]], axis=1)
+                features_to_predict = np.concatenate([features[:, 0:2], features[:, (low + 2):(hight + 2)]], axis=1)
             else:
                 features_to_predict = features[:, low:hight]
 
         prediction = model.predict(features_to_predict)
         predictions.append(np.reshape(prediction, [-1, 1]))
 
-    result = np.concatenate([features] + predictions, axis=1)
+    if add_base_features:
+        result = np.concatenate([features] + predictions, axis=1)
+    else:
+        result = np.concatenate(predictions, axis=1)
     if verbose:
         log("    {} features added".format(len(predictions)))
+        if not add_base_features:
+            log("    base features are not included")
+        else:
+            log("    base features not included")
         log("    result shape: {}".format(np.shape(result)))
     return result

@@ -21,6 +21,7 @@ def calculate_predictions(args):
         need_position_feature: bool
         model_constructor: callable. Takes verbose param. If type == "classification" also takes max_clicks param.
         additional_features: (dict day -> additional features for day) or None.
+        add_base_features: bool. Wether to add base features or to use only additional features.
         labels_to_substruct: (dict day -> targets to substruct for day) or None.
         train_days: list of ints. Numbers of days to train on.
         test_days: list of ints. Numbers of days to test on.
@@ -56,6 +57,7 @@ def calculate_predictions(args):
                 last_feature=args.last_feature,
                 add_positions=need_position_feature,
                 different_positions=different_positions,
+                add_base_features=args.add_base_features,
                 verbose=args.verbose
             )
         else:
@@ -65,6 +67,7 @@ def calculate_predictions(args):
                 last_feature=args.last_feature,
                 add_positions=need_position_feature,
                 different_positions=different_positions,
+                add_base_features=args.add_base_features,
                 verbose=args.verbose
             )
 
