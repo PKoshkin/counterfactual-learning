@@ -47,9 +47,10 @@ def get_features(pool, add_position=True):
     return pool[:, ind:]
 
 
-def calculate_metric(predictions, pool):
+def calculate_metric(predictions, pool, normalize=True):
     real_positions = get_positions(pool)
     weights = get_weights(pool)
     targets = get_targets(pool)
 
-    return np.mean(weights * targets * (predictions == real_positions))
+    denominator = np.mean(weights * (predictions == real_positions)) if normalize else 1.0
+    return np.mean(weights * targets * (predictions == real_positions)) / denominator

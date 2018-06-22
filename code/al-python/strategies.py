@@ -358,9 +358,7 @@ class DensityActiveLearningStrategy(BaseDensityBasedActiveLearningStrategy):
         return 1 + closeness ** self._beta
 
     def _update_closeness(self, new_unlabeled_pool, new_labeled_pool_part, indexes_to_label):
-        if self._all_data:
-            self._closeness = np.delete(self._closeness, indexes_to_label)
-        else:
+        if not self._all_data:
             closeness_update = self._compute_closeness(new_unlabeled_pool, new_labeled_pool_part)
             old_len = len(new_unlabeled_pool) + len(new_labeled_pool_part)
             new_len = len(new_unlabeled_pool)

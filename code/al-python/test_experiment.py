@@ -4,7 +4,7 @@ from results_handling import get_results
 from strategies import check_existance, QBCMetrics, MixTypes
 
 
-def _test(strategy, params='{}'):
+def _test(strategy, params='{}', normalize=True):
     assert check_existance(strategy), "Unknown strategy: {}".format(strategy)
 
     result_file_name = '_test_result_file_{}.txt'.format(strategy)
@@ -24,7 +24,7 @@ def _test(strategy, params='{}'):
             '--random_seed', '0',
             '--train_steps', '20',
             '--strategy_params', params,
-        ]
+        ] + (['--normalize'] if normalize else [])
     )
     returncode = process.wait()
     assert returncode == 0, "al_experiment failed with error"
@@ -88,6 +88,7 @@ def test_split_by_positions():
 
 def test_density_params():
     _test('density', '{"share": 0.1}')
+    _test('density', '{"all_data": true}')
 
 
 def test_diversity_params():
@@ -107,6 +108,10 @@ def test_mix_params():
     _test('US-density', '{"US": {"uncertainty_metric": "gini"}, "density": {"share": 0.1}}')
 
 
+
+def test_without_norm():
+    _test('US')
+
+
 if __name__ == '__main__':
-    # test_mix_EG()
-    test_split_by_positions()
+    test_density_params()

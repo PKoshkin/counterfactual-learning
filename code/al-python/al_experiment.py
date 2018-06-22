@@ -18,6 +18,7 @@ def _run_al_experiment(
     val_pool,
     test_pool,
     algo,
+    normalize,
     strategy_name,
     strategy_params,
     strategy,
@@ -53,7 +54,6 @@ def _run_al_experiment(
     test_metrics = []
 
     for iteration_ind in xrange(iters_num + 1):
-        print(iters_num)
         log('begin {} iteration.\n'.format(iteration_ind))
         log('Training model...\n')
         classifier = train(labeled_pool, **classifier_params)
@@ -67,12 +67,12 @@ def _run_al_experiment(
 
         log('Evaluating on validation...\n')
         val_predicted_positions = predict_positions(val_pool, classifier)
-        val_metric = calculate_metric(val_predicted_positions, val_pool)
+        val_metric = calculate_metric(val_predicted_positions, val_pool, normalize)
         val_metrics.append(val_metric)
 
         log('Evaluating on test...\n')
         test_predicted_positions = predict_positions(test_pool, classifier)
-        test_metric = calculate_metric(test_predicted_positions, test_pool)
+        test_metric = calculate_metric(test_predicted_positions, test_pool, normalize)
         test_metrics.append(test_metric)
 
     log('Finalizing experiment...\n')
@@ -92,6 +92,9 @@ def _get_initial_pools(train_pool, random_seed, initial_size):
     """Return [labeled_pool, unlabeled_pool]"""
     np.random.seed(random_seed)
     np.random.shuffle(train_pool)
+    print('train_pool first line:')
+    print(train_pool[0])
+    print('')
     return np.split(train_pool, [initial_size])
 
 
@@ -100,6 +103,7 @@ def parse_args():
     parser.add_argument('--train_pool', required=True)
     parser.add_argument('--val_pool', required=True)
     parser.add_argument('--test_pool', required=True)
+    parser.add_argument('--normalize', action='store_true')
     parser.add_argument('--random_seed', required=True, type=int)
     parser.add_argument('--strategy', required=True)
     parser.add_argument('--initial_size', required=True, type=float)
@@ -132,6 +136,7 @@ def main():
         val_pool,
         test_pool,
         'pool-based',
+        args.normalize,
         args.strategy,
         args.strategy_params,
         strategy,
@@ -139,6 +144,7 @@ def main():
         args.end_size,
         verbose=False,
         iterations=args.train_steps,
+        random_seed=args.random_seed,
     )
     with open(args.results, 'w') as handler:
         handler.write(result)
