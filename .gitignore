@@ -1,7 +1,10 @@
 documents
-pool.json
 *.ipynb_checkpoints*
 *.pytest_cache
 *catboost_info
 *.zip
 *.pyc
+*.npy
+*.json
+*.csv
+*.sav

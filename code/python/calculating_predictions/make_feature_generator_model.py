@@ -18,9 +18,9 @@ def make_feature_generator_model(args):
         data_folder: str. Directory, containing files "day_i.json" where i in range(DAYS_NUMBER).
         out_folder: str. Directory, to save results. 1 file will be created.
         model_constructor: callable. Takes verbose param.
-        model_name: str. Created file will have such name.
+        model_name: str. Created file will contain this str in it's filename.
         train_days: list of ints. Numbers of days to train on.
-        need_position_feature: include position in features or not.
+        position_features_num: int
         first_feature: int. First feature to take in tarining.
         last_feature: int. Last feature to take in training.
     """
@@ -34,7 +34,8 @@ def make_feature_generator_model(args):
             pool_iterator(json_filenames[day]),
             first_feature=args.first_feature,
             last_feature=args.last_feature,
-            add_positions=args.need_position_feature
+            position_features_num=args.position_features_num,
+            verbose=args.verbose
         )
 
     train_features = np.concatenate([get_day_features(day) for day in args.train_days], axis=0)
