@@ -510,8 +510,9 @@ class QBCActiveLearningStrategy(BaseActiveLearningStrategy):
             return np.sum(-normed_voutes * np.log(normed_voutes + 1e-5), axis=1)
 
         if self._metric == QBCMetrics.KL:
-            mean_probs = np.mean(all_probs, axis=0)
-            KL_distances = np.sum(all_probs * np.log(all_probs / mean_probs + 1e-5), axis=-1)
+            normed_probs /= np.sum(all_probs, axis=2)
+            mean_probs = np.mean(normed_probs, axis=0)
+            KL_distances = np.sum(normed_probs * np.log(normed_probs / mean_probs + 1e-5), axis=-1)
             return np.mean(KL_distances, axis=0)
 
     def _get_scores(
@@ -556,6 +557,7 @@ class QBCActiveLearningStrategy(BaseActiveLearningStrategy):
         )
         self._models[model_ind] = train(train_pool, verbose=False, **self._learning_params)
 
+    @classmethod
     def get_info(cls, params):
         return params
 

@@ -1,12 +1,22 @@
 import os
 import subprocess
-from results_handling import get_results
-from strategies import check_existance, QBCMetrics, MixTypes
+import json
+from results_handling import get_results, PARAMS_KEY
+from strategies import check_existance, QBCMetrics, MixTypes, _preproc
 
 
 def _test(strategy, params='{}', normalize=True):
     assert check_existance(strategy), "Unknown strategy: {}".format(strategy)
 
+    params_dict = json.loads(params)
+    if strategy == 'QBC':
+        params_dict.setdefault('learning_params', {})
+        params_dict["learning_params"]['iterations'] = 5
+    elif 'QBC' in strategy.split('-'):
+        params_dict.setdefault('QBC', {})
+        params_dict['QBC'].setdefault('learning_params', {})
+        params_dict['QBC']['learning_params']['iterations'] = 5
+    params = json.dumps(params_dict)
     result_file_name = '_test_result_file_{}.txt'.format(strategy)
     test_pool_path = 'test_test_pool.csv'
     train_pool_path = 'test_train_pool.csv'
@@ -22,18 +32,22 @@ def _test(strategy, params='{}', normalize=True):
             '--initial_size', str(0.2),
             '--batch_size', str(0.2),
             '--random_seed', '0',
-            '--train_steps', '20',
+            '--train_steps', '5',
             '--strategy_params', params,
         ] + (['--normalize'] if normalize else [])
     )
     returncode = process.wait()
     assert returncode == 0, "al_experiment failed with error"
 
-    results, _ = get_results(result_file_name)
+    results, saved_params = get_results(result_file_name)
+    if len(strategy.split('-')) > 1:
+        for s in strategy.split('-'):
+            params_dict.setdefault(s, {})
     # os.remove(result_file_name)
     assert len(results[strategy][0]) == 1
     assert len(results[strategy][0][0]) == 5
     assert len(results[strategy][1]) == 1
+    assert json.loads(saved_params[PARAMS_KEY]) == params_dict
     assert (results[strategy][0] == results[strategy][1]).all()
 
 
@@ -56,6 +70,7 @@ def test_diversity():
 def test_mix():
     _test('US-density')
     _test('density-diversity')
+    _test('QBC-PR')
 
 
 def test_PR():
@@ -70,9 +85,10 @@ def test_QBC():
 def test_mix_EG():
     _test('diversity-density', '{"mix_type": "' + MixTypes.EXPLORATION_GUIDED + '"}')
     _test(
-        'diversity-PR',
+        'QBC-PR',
         '{"mix_type": "' + MixTypes.EXPLORATION_GUIDED + '", "reserve_size": 1.2}'
     )
+    _test('US-PR-density', '{"mix_type": "' + MixTypes.EXPLORATION_GUIDED + '"}')
 
 
 def test_split_by_positions():
@@ -106,7 +122,6 @@ def test_US_params():
 
 def test_mix_params():
     _test('US-density', '{"US": {"uncertainty_metric": "gini"}, "density": {"share": 0.1}}')
-
 
 
 def test_without_norm():
