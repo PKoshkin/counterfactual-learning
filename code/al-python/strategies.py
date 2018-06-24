@@ -9,11 +9,17 @@ from utils import get_features, POSITIONS, get_positions
 from classifier import train, predict_positions
 
 
+PROBS = [
+    0.05994005994, 0.08391608392, 0.08891108891, 0.09290709291, 0.09490509491, 0.0959040959,
+    0.0969030969, 0.0979020979, 0.0989010989, 0.0989010989, 0.09090909091
+]
+
+
 def _get_indexes(scores, unlabeled_pool, size, split_by_positions):
     if split_by_positions:
-        pos_batch_size = int(round(size / len(POSITIONS)))
         indexes_by_pos = []
-        for pos in POSITIONS:
+        for pos, prob in zip(POSITIONS, PROBS):
+            pos_batch_size = int(round(size * prob))
             scores_for_pos = scores[get_positions(unlabeled_pool) == pos]
             pos_indexes = np.argpartition(scores_for_pos, -pos_batch_size)[-pos_batch_size:]
             indexes_by_pos.append(pos_indexes)
@@ -162,6 +168,7 @@ class PositionRelevanceActiveLearningStragety(ProbaBasedActiveLearningStrategy):
         if indexes_to_choose_from is not None:
             probs = probs[indexes_to_choose_from]
             unlabeled_pool = unlabeled_pool[indexes_to_choose_from]
+        probs = self._normalize_proba(probs)
         if self._relevance_metric == 'delta_max':
             max_values = np.max(probs, axis=1)
             rnd_values = probs[
@@ -190,15 +197,14 @@ class UncertaintySamplingActiveLearningStrategy(ProbaBasedActiveLearningStrategy
             unlabeled_pool = unlabeled_pool[indexes_to_choose_from]
             probs = probs[indexes_to_choose_from]
 
+        probs = self._normalize_proba(probs)
         if self._uncertainty_metric == 'max':
             return 1 - np.max(probs, axis=1)
 
         elif self._uncertainty_metric == 'gini':
-            probs = self._normalize_proba(probs)
             return 1 - np.sum(probs * probs, axis=1)
 
         elif self._uncertainty_metric == 'entropy':
-            probs = self._normalize_proba(probs)
             return -np.sum(probs * np.log(probs + 1e-10), axis=1)
 
         elif self._uncertainty_metric == 'delta':
@@ -510,7 +516,8 @@ class QBCActiveLearningStrategy(BaseActiveLearningStrategy):
             return np.sum(-normed_voutes * np.log(normed_voutes + 1e-5), axis=1)
 
         if self._metric == QBCMetrics.KL:
-            normed_probs /= np.sum(all_probs, axis=2)
+            normed_probs = np.transpose(all_probs, [2, 0, 1]) / np.sum(all_probs, axis=2)
+            normed_probs = np.transpose(normed_probs, [1, 2, 0])
             mean_probs = np.mean(normed_probs, axis=0)
             KL_distances = np.sum(normed_probs * np.log(normed_probs / mean_probs + 1e-5), axis=-1)
             return np.mean(KL_distances, axis=0)
