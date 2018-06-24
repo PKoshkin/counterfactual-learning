@@ -74,7 +74,6 @@ int main() {
     //}
 
     std::fstream output("nearest_queries.txt", input.out);
-    output << "{" << std::endl;
     for (int i = 0; i < queries.size(); ++i) {
         if (i % 500 == 0) {
             std::cout << i << " / " << queries.size() << " " << i * 100 / queries.size() << " %" << std::endl;
@@ -102,6 +101,5 @@ int main() {
         output << "]" << std::endl;
     }
 
-    output << "}";
     return 0;
 }
