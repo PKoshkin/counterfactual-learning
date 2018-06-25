@@ -15,31 +15,43 @@ class CascadeBandit(Bandit):
         self._nearest_queries = nearest_queries
         self._statistic = defaultdict(lambda: 0)
 
-    def get_action(self, query, verbose=False):
-        best_score = -1e16
-        best_action = -1
-        for action in self._actions:
-            score = sum(
-                self._bandits_by_queries[near_query].score_action(action) * get_similarity(query, near_query)
-                for near_query in self._nearest_queries[query]
-            )
-            if verbose:
-                print(score)
-            if score > best_score:
-                best_score = score
-                best_action = action
+    def _score_action(self, action, query=None, context=None, verbose=False, **kwargs):
+        assert query is not None
+
+        def score_by_query(other_query):
+            if context is None:
+                return self._bandits_by_queries[other_query]._score_action(action, verbose=verbose, **kwargs)
+            else:
+                return self._bandits_by_queries[other_query]._score_action(action, context, verbose=verbose, **kwargs)
+        score = sum(
+            score_by_query(near_query) * get_similarity(query, near_query)
+            for near_query in self._nearest_queries[query]
+        )
         if verbose:
-            print(" best score: {}".format(best_score))
-        return best_action
+            print(" action {} score: {}".format(action, score))
+        return score
 
     def get_statistic_size(self, query):
         return self._statistic[query]
 
-    def take_reward(self, query, action, reward):
+    def compile_rewards(self):
+        for i, query in enumerate(self._bandits_by_queries):
+            if i % 100 == 0:
+                print(" {} / {} - {} %".format(
+                    i,
+                    len(self._bandits_by_queries),
+                    round(100 * i / len(self._bandits_by_queries))
+                ))
+            self._bandits_by_queries[query].compile_rewards()
+
+    def take_reward(self, query, action, reward, context=None):
         """
         action: int from self._actions
         reward: 0 or 1
         """
         assert reward in [0, 1]
         self._statistic[query] += 1
-        self._bandits_by_queries[query].take_reward(action, reward)
+        if context is None:
+            self._bandits_by_queries[query].take_reward(action, reward)
+        else:
+            self._bandits_by_queries[query].take_reward(action, reward, context)
