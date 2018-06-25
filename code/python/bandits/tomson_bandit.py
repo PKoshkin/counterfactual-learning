@@ -1,6 +1,5 @@
 from bandit import Bandit
 from scipy.stats import beta
-import numpy as np
 
 
 class TomsonBandit(Bandit):
@@ -23,14 +22,7 @@ class TomsonBandit(Bandit):
         # beta "b" param equals to losses
         return beta.rvs(a=params[1], b=params[0], size=1)
 
-    def get_action(self):
-        rewards = [
-            TomsonBandit._sample(self._reward_distributions_params[action])
-            for action in self._actions
-        ]
-        return self._actions[np.argmax(rewards)]
-
-    def score_action(self, action):
+    def _score_action(self, action, **kwargs):
         return self._reward_distributions_params[action][1] - self._reward_distributions_params[action][0]
 
     def get_statistic_size(self):
@@ -38,16 +30,6 @@ class TomsonBandit(Bandit):
             sum(self._reward_distributions_params[action]) - sum(self._init_params)
             for action in self._actions
         ])
-
-    def get_greedy_action(self, statistic_size_threshold):
-        wins = [
-            self._reward_distributions_params[action][1]
-            for action in self._actions
-        ]
-        if self.get_statistic_size() < statistic_size_threshold:
-            return 4
-        else:
-            return self._actions[np.argmax(wins)]
 
     def take_reward(self, action, reward):
         """
