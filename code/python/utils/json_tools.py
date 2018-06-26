@@ -106,8 +106,8 @@ def get_linear_stacked_features(pool_iterator,
             to_index = filename.find("_to_")
             low = int(filename[(from_index + 6):to_index])
             hight = int(filename[(to_index + 4):trained_index])
-            position_features = base_features[:, 0:position_features_num],
-            factors = base_features[:, (low + position_features_num):(hight + position_features_num)],
+            position_features = base_features[:, 0:position_features_num]
+            factors = base_features[:, (low + position_features_num):(hight + position_features_num)]
             features_to_predict = np.concatenate([position_features, factors], axis=1)
         prediction = model.predict(features_to_predict)
         predictions.append(np.reshape(prediction, [-1, 1]))
@@ -118,8 +118,8 @@ def get_linear_stacked_features(pool_iterator,
         result = np.concatenate(predictions, axis=1)
     if verbose:
         log("    {} features added".format(len(predictions)))
-        if not add_base_features:
-            log("    base features are not included")
+        if add_base_features:
+            log("    base features included")
         else:
             log("    base features not included")
         log("    result shape: {}".format(np.shape(result)))
