@@ -77,7 +77,7 @@ def make_trained_model(args):
     else:
         if args.verbose:
             log("using fit without validation")
-        model.fit(train_features, train_labels)
+        model.fit(train_features, train_labels, cat_features=[0])
 
     if "tree_count_" in dir(model):
         if args.verbose:
